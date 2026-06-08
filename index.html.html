@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌟 반짝반짝 공부방</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+:root{--sky:#6EC6F5;--sun:#FFD93D;--grass:#6BCB77;--coral:#FF6B6B;--purple:#C77DFF;--cream:#FFF8F0;--dark:#2D2D2D;--sh:0 8px 32px rgba(0,0,0,0.12);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;overflow-y:auto;}
+.screen.active{display:flex;}
+
+/* HOME */
+#homeScreen{background:linear-gradient(150deg,#6EC6F5,#C77DFF 60%,#FF6B6B);justify-content:center;text-align:center;padding:30px 20px;}
+.char{font-size:5rem;animation:bounce 1.6s ease-in-out infinite;cursor:pointer;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.htitle{font-family:'Fredoka One',cursive;font-size:clamp(2.2rem,7vw,3.8rem);color:#fff;text-shadow:4px 4px 0 rgba(0,0,0,.15);margin:10px 0 4px;}
+.hsub{color:rgba(255,255,255,.9);font-size:.95rem;font-weight:700;margin-bottom:6px;}
+.hver{color:rgba(255,255,255,.45);font-size:.68rem;margin-bottom:20px;letter-spacing:.5px;}
+
+/* 스트릭 & 캐릭터 홈 표시 */
+.home-status{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;}
+.streak-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:8px 16px;color:#fff;font-size:.9rem;font-weight:900;}
+.char-level-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:8px 16px;color:#fff;font-size:.9rem;font-weight:900;}
+.hbtns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:310px;}
+.btn{padding:15px 24px;border:none;border-radius:18px;font-size:1.15rem;font-weight:900;cursor:pointer;font-family:inherit;transition:transform .13s,box-shadow .13s;box-shadow:0 5px 0 rgba(0,0,0,.2);}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2);}
+.btn-y{background:var(--sun);color:var(--dark);}
+.btn-w{background:#fff;color:var(--purple);}
+.btn-g{background:var(--grass);color:#fff;}
+.btn-p{background:var(--purple);color:#fff;}
+.btn-r{background:var(--coral);color:#fff;}
+.btn-b{background:var(--sky);color:#fff;}
+.btn-sm{padding:10px 18px;font-size:.9rem;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.15);}
+
+/* HEADER */
+.phdr{width:100%;max-width:540px;display:flex;align-items:center;gap:12px;padding:22px 20px 14px;flex-shrink:0;}
+.bbtn{background:#fff;border:3px solid #eee;border-radius:50%;width:44px;height:44px;font-size:1.3rem;cursor:pointer;flex-shrink:0;font-family:inherit;transition:transform .13s;}
+.bbtn:hover{transform:scale(1.1);}
+.ptitle{font-size:1.4rem;font-weight:900;color:var(--dark);}
+
+/* DAILY MISSION */
+#missionScreen{background:linear-gradient(180deg,#fff9e0,#fff9f0);padding-bottom:30px;}
+.mission-hero{width:100%;max-width:540px;padding:0 20px;margin-bottom:16px;}
+.mission-date{font-size:.85rem;font-weight:700;color:#aaa;margin-bottom:6px;}
+.mission-progress-wrap{background:#fff;border-radius:20px;padding:18px 20px;box-shadow:var(--sh);margin-bottom:14px;}
+.mission-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.mission-title{font-size:1.1rem;font-weight:900;color:var(--dark);}
+.mission-pct{font-size:1.4rem;font-weight:900;color:var(--purple);}
+.mpbar{height:16px;background:#eee;border-radius:10px;overflow:hidden;}
+.mpfill{height:100%;background:linear-gradient(90deg,var(--grass),var(--sky));border-radius:10px;transition:width .6s;}
+.mission-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:540px;padding:0 20px;}
+.mission-item{background:#fff;border-radius:16px;padding:14px 18px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .15s;}
+.mission-item:hover{transform:translateY(-2px);}
+.mission-item.done{opacity:.6;}
+.mission-check{width:32px;height:32px;border-radius:50%;border:3px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;transition:all .2s;}
+.mission-check.done{background:var(--grass);border-color:var(--grass);color:#fff;}
+.mission-info{flex:1;}
+.mission-name{font-weight:900;font-size:.95rem;color:var(--dark);}
+.mission-sub{font-size:.78rem;color:#aaa;margin-top:2px;}
+.mission-reward{font-size:1.1rem;}
+
+/* SUBJECT MENU */
+#subjectMenu{background:linear-gradient(180deg,#e8f6ff,#fff9f0);padding-bottom:30px;}
+.stardisplay{background:#fff;border-radius:18px;padding:12px 20px;margin-bottom:16px;box-shadow:var(--sh);font-size:.9rem;font-weight:700;color:var(--dark);width:100%;max-width:540px;text-align:center;}
+.char-display{font-size:3rem;text-align:center;margin-bottom:4px;animation:bounce 2s ease-in-out infinite;}
+.char-name{font-size:.82rem;font-weight:700;color:#888;text-align:center;margin-bottom:16px;}
+.subgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%;max-width:540px;padding:0 20px 20px;}
+.scard{background:#fff;border-radius:20px;padding:22px 14px;text-align:center;cursor:pointer;transition:transform .18s,box-shadow .18s;box-shadow:var(--sh);border:3px solid transparent;position:relative;}
+.scard:hover{transform:translateY(-5px);box-shadow:0 14px 36px rgba(0,0,0,.14);}
+.scard:active{transform:scale(.96);}
+.sicon{font-size:2.8rem;margin-bottom:8px;}
+.sname{font-size:.95rem;font-weight:900;color:var(--dark);margin-bottom:3px;}
+.sdesc{font-size:.7rem;color:#888;}
+.scard.math{border-color:#FFD93D;background:linear-gradient(135deg,#fffae0,#fff);}
+.scard.money{border-color:#FF6B6B;background:linear-gradient(135deg,#ffe8e8,#fff);}
+.scard.korean{border-color:#6BCB77;background:linear-gradient(135deg,#e8fde8,#fff);}
+.scard.english{border-color:#6EC6F5;background:linear-gradient(135deg,#e0f4ff,#fff);}
+.scard.hanja{border-color:#C77DFF;background:linear-gradient(135deg,#f3e8ff,#fff);}
+.scard.music{border-color:#FF9F43;background:linear-gradient(135deg,#fff3e0,#fff);}
+.mission-dot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--coral);}
+.mission-dot.done{background:var(--grass);}
+
+/* LEVEL TEST */
+#levelTest{background:linear-gradient(180deg,#f3e8ff,#fff9f0);padding-bottom:30px;}
+.ltcard{background:#fff;border-radius:24px;padding:28px;width:100%;max-width:520px;box-shadow:var(--sh);margin:0 20px 16px;text-align:center;}
+.ltstatus{font-size:.88rem;color:#888;font-weight:700;margin-bottom:8px;}
+.ltq{font-size:1rem;font-weight:900;color:var(--dark);margin-bottom:10px;}
+.ltbig{font-size:clamp(1.8rem,6vw,3rem);font-weight:900;color:var(--dark);margin-bottom:6px;line-height:1.2;}
+.lthint{font-size:.83rem;color:#aaa;margin-bottom:14px;}
+.ltchoices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:520px;padding:0 20px;}
+.ltbtn{background:#fff;border:3px solid #e0e0e0;border-radius:16px;padding:14px 10px;font-size:1.1rem;font-weight:900;cursor:pointer;font-family:inherit;transition:all .13s;box-shadow:0 4px 0 #e0e0e0;color:var(--dark);}
+.ltbtn:hover{border-color:var(--sky);background:#f0faff;}
+.ltbtn.c{background:#e8fde8;border-color:var(--grass);color:#2a7a2a;animation:pop .3s;}
+.ltbtn.w{background:#ffe8e8;border-color:var(--coral);color:#c0392b;animation:shake .3s;}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@keyframes popIn{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes levelup{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.15) rotate(3deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* QUIZ */
+#quizScreen{background:linear-gradient(180deg,#e8f6ff,#fff9f0);padding-bottom:20px;}
+.qhdr{width:100%;max-width:540px;display:flex;align-items:center;gap:8px;padding:14px 20px 8px;}
+.qbadge{padding:5px 12px;border-radius:16px;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;}
+.qpbar{flex:1;height:11px;background:#eee;border-radius:8px;overflow:hidden;}
+.qpfill{height:100%;background:linear-gradient(90deg,var(--grass),var(--sky));border-radius:8px;transition:width .4s;}
+.qcnt{font-size:.8rem;font-weight:700;color:#888;flex-shrink:0;}
+/* 타이머 */
+.qtimer{font-size:.9rem;font-weight:900;color:var(--coral);flex-shrink:0;min-width:36px;text-align:right;}
+.qtimer.warning{animation:pulse .5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.qcard{background:#fff;border-radius:24px;padding:22px;width:100%;max-width:520px;box-shadow:var(--sh);margin:0 20px 12px;text-align:center;}
+.qquestion{font-size:.95rem;color:#555;margin-bottom:8px;font-weight:700;}
+.qbig{font-size:clamp(1.7rem,6vw,2.8rem);font-weight:900;color:var(--dark);line-height:1.2;}
+.qhint{font-size:.82rem;color:#aaa;margin-top:6px;}
+.aarea{width:100%;max-width:520px;padding:0 20px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.achoices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.achoices.wide{grid-template-columns:1fr;}
+.abtn{background:#fff;border:3px solid #e0e0e0;border-radius:16px;padding:14px 8px;font-size:1.1rem;font-weight:900;cursor:pointer;font-family:inherit;transition:all .13s;box-shadow:0 4px 0 #e0e0e0;color:var(--dark);}
+.abtn:hover{border-color:var(--sky);background:#f0faff;transform:translateY(-2px);}
+.abtn.c{background:#e8fde8;border-color:var(--grass);color:#2a7a2a;animation:pop .3s;}
+.abtn.w{background:#ffe8e8;border-color:var(--coral);color:#c0392b;animation:shake .3s;}
+.kinput{width:100%;padding:13px 15px;font-size:1.15rem;font-family:inherit;border:3px solid var(--grass);border-radius:13px;outline:none;font-weight:700;color:var(--dark);}
+.kinput:focus{box-shadow:0 0 0 3px rgba(107,203,119,.2);}
+.srow{display:flex;gap:8px;width:100%;}
+.bclear{background:#eee;color:#666;border:none;border-radius:11px;padding:10px 14px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.bsub{background:var(--grass);color:#fff;border:none;border-radius:11px;padding:10px 0;font-size:.95rem;font-weight:900;cursor:pointer;flex:1;font-family:inherit;}
+.alpgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;width:100%;}
+.albtn{padding:9px 3px;border-radius:9px;font-size:.9rem;font-weight:700;border:2px solid #ddd;background:#fff;cursor:pointer;font-family:inherit;color:var(--dark);}
+.albtn:hover{background:var(--sky);color:#fff;border-color:var(--sky);}
+.spelldsp{font-size:1.7rem;font-weight:900;letter-spacing:6px;background:#f5f5f5;border-radius:13px;padding:11px 18px;width:100%;text-align:center;}
+.coinrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%;}
+.coinchip{border-radius:50px;padding:7px 13px;font-size:.76rem;font-weight:900;box-shadow:0 3px 8px rgba(0,0,0,.12);border:2px solid #ddd;}
+.cc10{border-color:#aaa;color:#444;background:#f5f5f5;}
+.cc50{border-color:#c8b040;color:#7a5a00;background:#fffbe0;}
+.cc100{border-color:#c0a060;color:#5a3000;background:#fff5e0;}
+.cc500{border-color:#888;color:#333;background:#f0f0f0;}
+.hintbox{background:#fffbe0;border:2px solid var(--sun);border-radius:13px;padding:13px;width:100%;font-size:.9rem;color:#5a4a00;font-weight:700;animation:popIn .25s;}
+.hintbtn{background:linear-gradient(135deg,var(--sun),#e8b800);color:var(--dark);border:none;border-radius:14px;padding:11px 18px;font-size:.9rem;font-weight:900;cursor:pointer;font-family:inherit;width:100%;}
+.hintbtn:disabled{background:#ccc;cursor:not-allowed;}
+.dictcard{background:linear-gradient(135deg,#e8fde8,#f5fff5);border:3px solid var(--grass);border-radius:18px;padding:18px;width:100%;text-align:center;animation:popIn .3s;}
+.dictword{font-size:2.5rem;font-weight:900;letter-spacing:5px;color:var(--dark);margin-bottom:6px;}
+
+/* RESULT */
+#resultScreen{background:linear-gradient(150deg,#6EC6F5,#C77DFF);justify-content:center;text-align:center;padding:30px 20px;}
+.rcard{background:#fff;border-radius:28px;padding:32px 26px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.remoji{font-size:4rem;margin-bottom:10px;}
+.rmsg{font-size:1.5rem;font-weight:900;color:var(--dark);margin-bottom:4px;}
+.rscore{font-size:2.8rem;font-weight:900;color:var(--purple);margin:12px 0;}
+.rstars{font-size:1.7rem;margin-bottom:10px;}
+.rbonus{font-size:.85rem;color:#888;margin-bottom:6px;}
+.rdetail{font-size:.88rem;color:#aaa;margin-bottom:20px;}
+.rbtns{display:flex;flex-direction:column;gap:10px;}
+.bsec{padding:12px;border-radius:14px;font-size:.9rem;font-weight:700;cursor:pointer;border:3px solid #eee;background:#fff;color:var(--dark);font-family:inherit;}
+/* 뽑기 */
+.gacha-box{background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:3px solid #FF9F43;border-radius:20px;padding:20px;text-align:center;margin-bottom:14px;animation:popIn .4s;}
+.gacha-emoji{font-size:3.5rem;animation:float 1.5s ease-in-out infinite;}
+.gacha-name{font-size:1rem;font-weight:900;color:#5a3000;margin-top:8px;}
+/* 배지 */
+.badge-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:24px;padding:28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);z-index:9999;animation:levelup .5s ease-out;max-width:280px;width:90%;}
+.badge-emoji{font-size:4rem;margin-bottom:10px;}
+.badge-title{font-size:.82rem;font-weight:700;color:#aaa;margin-bottom:4px;}
+.badge-name{font-size:1.4rem;font-weight:900;color:var(--dark);margin-bottom:8px;}
+.badge-desc{font-size:.88rem;color:#888;margin-bottom:16px;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;}
+
+/* LEARN */
+#learnScreen{background:linear-gradient(180deg,#fff9e0,#fff9f0);padding-bottom:30px;}
+.learncard{background:#fff;border-radius:24px;padding:26px;width:100%;max-width:520px;box-shadow:var(--sh);margin:0 20px 14px;}
+.learn-icon{font-size:3.5rem;text-align:center;margin-bottom:10px;}
+.learn-title{font-size:1.2rem;font-weight:900;color:var(--dark);margin-bottom:7px;text-align:center;}
+.learn-content{font-size:.97rem;line-height:1.9;color:#444;}
+.learn-content b{color:var(--purple);}
+.learn-nav{display:flex;gap:10px;width:100%;max-width:520px;padding:0 20px;}
+.learn-dot-row{display:flex;gap:6px;justify-content:center;margin:8px 0;width:100%;max-width:520px;}
+.ldot{width:10px;height:10px;border-radius:50%;background:#ddd;cursor:pointer;transition:background .2s;}
+.ldot.on{background:var(--purple);}
+
+/* BADGES SCREEN */
+#badgesScreen{background:linear-gradient(180deg,#f3e8ff,#fff9f0);padding-bottom:30px;}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:540px;padding:0 20px;}
+.badge-card{background:#fff;border-radius:16px;padding:16px 10px;text-align:center;box-shadow:0 3px 12px rgba(0,0,0,.08);}
+.badge-card.locked{opacity:.35;filter:grayscale(1);}
+.bc-emoji{font-size:2.2rem;margin-bottom:6px;}
+.bc-name{font-size:.75rem;font-weight:900;color:var(--dark);}
+
+/* STICKERS SCREEN */
+#stickersScreen{background:linear-gradient(180deg,#fffbe0,#fff9f0);padding-bottom:30px;}
+.sticker-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%;max-width:540px;padding:0 20px;}
+.sticker-slot{background:#fff;border-radius:14px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:1.8rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.sticker-slot.empty{border:2px dashed #ddd;font-size:1.4rem;color:#ddd;}
+
+/* PARENT */
+#parentScreen{background:#f0f4f8;padding-bottom:30px;}
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:580px;padding:0 20px;margin-bottom:16px;}
+.sstat{background:#fff;border-radius:18px;padding:16px;box-shadow:var(--sh);text-align:center;}
+.sstat-icon{font-size:1.6rem;margin-bottom:5px;}
+.sstat-val{font-size:1.7rem;font-weight:900;color:var(--dark);}
+.sstat-lbl{font-size:.72rem;color:#888;margin-top:2px;}
+.sectitle{font-size:.98rem;font-weight:900;color:var(--dark);margin-bottom:10px;width:100%;max-width:580px;padding:0 20px;}
+.hlist{width:100%;max-width:580px;padding:0 20px;display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.hitem{background:#fff;border-radius:14px;padding:13px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px;}
+.hscore{font-size:.95rem;font-weight:900;padding:5px 10px;border-radius:9px;}
+.sg{background:#e8fde8;color:#2a7a2a;}.so{background:#fff3cd;color:#856404;}.sp{background:#ffe8e8;color:#c0392b;}
+.wlist{width:100%;max-width:580px;padding:0 20px;margin-bottom:16px;}
+.witem{background:#fff;border-radius:12px;padding:12px 15px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 7px rgba(0,0,0,.05);}
+.wbar{flex:1;height:8px;background:#eee;border-radius:6px;overflow:hidden;}
+.wfill{height:100%;border-radius:6px;transition:width .9s;}
+.notifysec{width:100%;max-width:580px;padding:0 20px;margin-bottom:16px;}
+.ncard{background:#fff;border-radius:18px;padding:18px;box-shadow:var(--sh);}
+.ninput{width:100%;padding:10px 13px;border:2px solid #e0e0e0;border-radius:11px;font-size:.88rem;font-family:inherit;margin-bottom:8px;outline:none;}
+.ninput:focus{border-color:var(--sky);}
+.bnot{background:var(--purple);color:#fff;border:none;border-radius:11px;padding:10px 18px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+/* CONFETTI */
+.cfwrap{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden;}
+.cfp{position:absolute;animation:fall 2.5s ease-in forwards;}
+@keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* MUSIC MENU */
+#musicMenu{background:linear-gradient(180deg,#fff3e0,#fff9f0);padding-bottom:30px;}
+#practiceScreen{background:linear-gradient(180deg,#e8fde8,#fff9f0);padding-bottom:30px;}
+
+@media(min-width:600px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="homeScreen" class="screen active">
+  <div class="char" id="homeChar">🌱</div>
+  <div class="htitle">반짝반짝 공부방</div>
+  <div class="hsub">재미있게 배우고 쑥쑥 자라요! ✨</div>
+  <div class="hver">made by HKS v2.0</div>
+  <div class="home-status">
+    <div class="streak-badge" id="homeStreak">🔥 0일 연속</div>
+    <div class="char-level-badge" id="homeCharLevel">🌱 씨앗</div>
+  </div>
+  <div class="hbtns">
+    <button class="btn btn-y" onclick="showScreen('missionScreen')">📅 오늘 미션 확인</button>
+    <button class="btn btn-w" onclick="showScreen('subjectMenu')">📚 공부하기</button>
+    <button class="btn btn-p" onclick="showScreen('badgesScreen')">🏆 배지 & 스티커</button>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;box-shadow:none;" onclick="showScreen('parentScreen')">👨‍👩‍👧 부모님 확인</button>
+  </div>
+</div>
+
+<!-- DAILY MISSION -->
+<div id="missionScreen" class="screen">
+  <div class="phdr">
+    <button class="bbtn" onclick="showScreen('homeScreen')">←</button>
+    <div class="ptitle">📅 오늘의 미션</div>
+  </div>
+  <div class="mission-hero">
+    <div class="mission-date" id="missionDate"></div>
+    <div class="mission-progress-wrap">
+      <div class="mission-title-row">
+        <div class="mission-title">오늘 진행률</div>
+        <div class="mission-pct" id="missionPct">0%</div>
+      </div>
+      <div class="mpbar"><div class="mpfill" id="missionBar" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="mission-list" id="missionList"></div>
+  <div style="height:20px;"></div>
+  <button class="btn btn-g btn-sm" style="width:100%;max-width:500px;margin:0 20px;" onclick="showScreen('subjectMenu')">📚 공부하러 가기</button>
+</div>
+
+<!-- SUBJECT MENU -->
+<div id="subjectMenu" class="screen">
+  <div class="phdr">
+    <button class="bbtn" onclick="showScreen('homeScreen')">←</button>
+    <div class="ptitle">무슨 공부 할까요? 📚</div>
+  </div>
+  <div class="stardisplay" id="starDisplay">⭐ 오늘 모은 별: 0개 &nbsp;|&nbsp; 🔥 0일 연속</div>
+  <div class="char-display" id="charDisplay">🌱</div>
+  <div class="char-name" id="charName">씨앗 레벨</div>
+  <div class="subgrid">
+    <div class="scard math" onclick="pickSubject('math')"><div class="mission-dot" id="mdot-math"></div><div class="sicon">➕</div><div class="sname">수학</div><div class="sdesc">덧셈·뺄셈</div></div>
+    <div class="scard money" onclick="pickSubject('money')"><div class="mission-dot" id="mdot-money"></div><div class="sicon">🪙</div><div class="sname">동전</div><div class="sdesc">동전 세기</div></div>
+    <div class="scard korean" onclick="pickSubject('korean')"><div class="mission-dot" id="mdot-korean"></div><div class="sicon">가</div><div class="sname">국어</div><div class="sdesc">받아쓰기·독해</div></div>
+    <div class="scard english" onclick="pickSubject('english')"><div class="mission-dot" id="mdot-english"></div><div class="sicon">🔤</div><div class="sname">영어</div><div class="sdesc">단어·철자</div></div>
+    <div class="scard hanja" onclick="pickSubject('hanja')"><div class="mission-dot" id="mdot-hanja"></div><div class="sicon">字</div><div class="sname">한자</div><div class="sdesc">한자·뜻</div></div>
+    <div class="scard music" onclick="showMusicMenu()"><div class="mission-dot" id="mdot-music"></div><div class="sicon">🎵</div><div class="sname">음악</div><div class="sdesc">악보·피아노·바이올린</div></div>
+  </div>
+</div>
+
+<!-- MUSIC MENU -->
+<div id="musicMenu" class="screen">
+  <div class="phdr"><button class="bbtn" onclick="showScreen('subjectMenu')">←</button><div class="ptitle">🎵 음악 공부</div></div>
+  <div style="width:100%;max-width:540px;display:flex;flex-direction:column;gap:14px;padding:0 20px 30px;">
+    <div class="scard" style="border-color:#6EC6F5;background:linear-gradient(135deg,#e0f4ff,#fff);display:flex;align-items:center;gap:16px;text-align:left;padding:20px 22px;cursor:pointer;" onclick="pickSubject('music_theory')">
+      <div style="font-size:2.5rem;">📄</div><div><div class="sname" style="font-size:1rem;">악보 & 음악 이론</div><div class="sdesc" style="margin-top:3px;">음표·쉼표·기호·박자·음계</div></div>
+    </div>
+    <div class="scard" style="border-color:#C77DFF;background:linear-gradient(135deg,#f3e8ff,#fff);display:flex;align-items:center;gap:16px;text-align:left;padding:20px 22px;cursor:pointer;" onclick="pickSubject('piano')">
+      <div style="font-size:2.5rem;">🎹</div><div><div class="sname" style="font-size:1rem;">피아노</div><div class="sdesc" style="margin-top:3px;">자세·건반·스케일·곡 연주</div></div>
+    </div>
+    <div class="scard" style="border-color:#FF6B6B;background:linear-gradient(135deg,#ffe8e8,#fff);display:flex;align-items:center;gap:16px;text-align:left;padding:20px 22px;cursor:pointer;" onclick="pickSubject('violin')">
+      <div style="font-size:2.5rem;">🎻</div><div><div class="sname" style="font-size:1rem;">바이올린</div><div class="sdesc" style="margin-top:3px;">활 쥐기·튜닝·줄 갈기·스케일</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LEVEL TEST -->
+<div id="levelTest" class="screen">
+  <div class="phdr"><button class="bbtn" onclick="goBack()">←</button><div class="ptitle" id="ltTitle">레벨 테스트 🎯</div></div>
+  <div id="ltContent" style="width:100%;max-width:520px;padding:0 20px;display:flex;flex-direction:column;align-items:center;gap:10px;"></div>
+</div>
+
+<!-- LEARN -->
+<div id="learnScreen" class="screen">
+  <div class="phdr"><button class="bbtn" onclick="goBack()">←</button><div class="ptitle" id="learnTitle">배우기 📖</div></div>
+  <div id="learnContent" style="width:100%;max-width:520px;padding:0 20px;display:flex;flex-direction:column;align-items:center;"></div>
+  <div class="learn-dot-row" id="learnDots"></div>
+  <div class="learn-nav"><button class="btn btn-sm btn-w" id="learnPrev" onclick="learnNav(-1)" style="flex:1">← 이전</button><button class="btn btn-sm btn-g" id="learnNext" onclick="learnNav(1)" style="flex:1">다음 →</button></div>
+  <div style="height:14px;"></div>
+  <button class="btn btn-y btn-sm" onclick="startQuiz()" style="width:100%;max-width:520px;margin:0 20px;">🎮 연습 문제 풀기!</button>
+  <div style="height:20px;"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="quizScreen" class="screen">
+  <div class="qhdr">
+    <button class="bbtn" onclick="quitQuiz()">←</button>
+    <span class="qbadge" id="qBadge">수학</span>
+    <span id="qLevel" style="font-size:.72rem;font-weight:700;color:#888;flex-shrink:0;"></span>
+    <div class="qpbar"><div class="qpfill" id="qFill" style="width:0%"></div></div>
+    <span class="qcnt" id="qCnt">1/10</span>
+    <span class="qtimer" id="qTimer"></span>
+  </div>
+  <div class="qcard"><div class="qquestion" id="qQ"></div><div class="qbig" id="qBig"></div><div class="qhint" id="qHint"></div></div>
+  <div class="aarea" id="aArea"></div>
+</div>
+
+<!-- RESULT -->
+<div id="resultScreen" class="screen">
+  <div class="rcard">
+    <div class="remoji" id="rEmoji">🎉</div>
+    <div class="rmsg" id="rMsg"></div>
+    <div class="rscore" id="rScore"></div>
+    <div class="rstars" id="rStars"></div>
+    <div class="rbonus" id="rBonus"></div>
+    <div class="gacha-box" id="gachaBox" style="display:none;"></div>
+    <div class="rdetail" id="rDetail"></div>
+    <div class="rbtns">
+      <button class="btn btn-y" onclick="startQuiz()" style="font-size:1rem;padding:13px;">🔄 다시 풀기</button>
+      <button class="btn btn-g btn-sm" onclick="goLearn()">📖 배우기로 가기</button>
+      <button class="bsec" onclick="goBack()">📚 다른 과목 선택</button>
+    </div>
+  </div>
+</div>
+
+<!-- BADGES -->
+<div id="badgesScreen" class="screen">
+  <div class="phdr"><button class="bbtn" onclick="showScreen('homeScreen')">←</button><div class="ptitle">🏆 배지 컬렉션</div></div>
+  <div class="badge-grid" id="badgeGrid"></div>
+  <div style="height:20px;"></div>
+  <div class="phdr" style="padding-top:4px;"><div class="ptitle">🎁 스티커 앨범</div></div>
+  <div class="sticker-grid" id="stickerGrid"></div>
+  <div style="height:30px;"></div>
+</div>
+
+<!-- PARENT -->
+<div id="parentScreen" class="screen">
+  <div class="phdr"><button class="bbtn" onclick="showScreen('homeScreen')">←</button><div class="ptitle">👨‍👩‍👧 부모님 대시보드</div></div>
+  <div class="sgrid">
+    <div class="sstat"><div class="sstat-icon">⭐</div><div class="sstat-val" id="pStars">0</div><div class="sstat-lbl">모은 별</div></div>
+    <div class="sstat"><div class="sstat-icon">🔥</div><div class="sstat-val" id="pStreak">0</div><div class="sstat-lbl">연속 학습일</div></div>
+    <div class="sstat"><div class="sstat-icon">🏆</div><div class="sstat-val" id="pBadges">0</div><div class="sstat-lbl">획득 배지</div></div>
+    <div class="sstat"><div class="sstat-icon">🎯</div><div class="sstat-val" id="pRate">-</div><div class="sstat-lbl">전체 정답률</div></div>
+  </div>
+  <div class="sectitle">📅 오늘 미션 현황</div>
+  <div id="pMission" style="width:100%;max-width:580px;padding:0 20px;margin-bottom:16px;"></div>
+  <div class="sectitle">📊 과목별 수준 & 정답률</div>
+  <div class="wlist" id="pWeak"></div>
+  <div class="sectitle">📋 최근 학습 기록</div>
+  <div class="hlist" id="pHist"></div>
+  <div class="notifysec"><div class="ncard">
+    <div style="font-weight:900;margin-bottom:10px;">📱 알림 설정</div>
+    <input class="ninput" type="email" id="nEmail" placeholder="이메일 주소"/>
+    <input class="ninput" type="tel" id="nPhone" placeholder="전화번호"/>
+    <button class="bnot" onclick="saveNotify()">💾 저장</button>
+    <div id="nLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
+  </div></div>
+</div>
+
+<div class="cfwrap" id="cfWrap"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════
+const NAMES={math:'수학',money:'동전',korean:'국어',english:'영어',hanja:'한자',music:'음악',music_theory:'악보/이론',piano:'피아노',violin:'바이올린'};
+const COLORS={math:'#FFD93D',money:'#FF6B6B',korean:'#6BCB77',english:'#6EC6F5',hanja:'#C77DFF',music_theory:'#6EC6F5',piano:'#C77DFF',violin:'#FF6B6B'};
+const ICONS={math:'➕',money:'🪙',korean:'가',english:'🔤',hanja:'字',music:'🎵',music_theory:'📄',piano:'🎹',violin:'🎻'};
+const MUSIC_SUBJS=['music_theory','piano','violin'];
+
+// 캐릭터 성장
+const CHARS=[
+  {emoji:'🌱',name:'씨앗',stars:0},
+  {emoji:'🌿',name:'새싹',stars:10},
+  {emoji:'🌳',name:'나무',stars:30},
+  {emoji:'🌸',name:'꽃',stars:60},
+  {emoji:'🍎',name:'열매',stars:100},
+  {emoji:'⭐',name:'별빛 나무',stars:150},
+];
+
+// 배지 정의
+const BADGE_DEFS=[
+  {id:'first',emoji:'🎉',name:'첫 걸음',desc:'처음으로 문제를 풀었어요!'},
+  {id:'perfect',emoji:'💯',name:'만점왕',desc:'10문제 모두 맞혔어요!'},
+  {id:'streak3',emoji:'🔥',name:'3일 연속',desc:'3일 연속 학습했어요!'},
+  {id:'streak7',emoji:'🏅',name:'일주일 연속',desc:'7일 연속 학습했어요!'},
+  {id:'math_master',emoji:'🔢',name:'수학왕',desc:'수학 만점 달성!'},
+  {id:'english_star',emoji:'🌟',name:'영어 스타',desc:'영어 10문제 완료!'},
+  {id:'hanja_pro',emoji:'字',name:'한자 박사',desc:'한자 10문제 완료!'},
+  {id:'music_lover',emoji:'🎵',name:'음악 팬',desc:'음악 과목 완료!'},
+  {id:'collector',emoji:'🎁',name:'수집가',desc:'스티커 10개 모았어요!'},
+  {id:'allrounder',emoji:'🌈',name:'올라운더',desc:'6개 과목 모두 풀었어요!'},
+  {id:'hundred',emoji:'💫',name:'백 문제',desc:'총 100문제 풀었어요!'},
+  {id:'star50',emoji:'👑',name:'별 50개',desc:'별을 50개 모았어요!'},
+];
+
+// 스티커 풀
+const STICKER_POOL=['🦋','🌈','🦄','🐉','🎠','🌙','☀️','⚡','🎯','🏆','💎','🎪','🚀','🌊','🔮','🎨','🦊','🐬','🌺','🎭'];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let curSubject='math', curLevel=1, questions=[], curQ=0, score=0, totalStars=0;
+let typedAns='', hintLv=0, learnPage=0, learnPages=[];
+let timerInterval=null, timeLeft=0, bonusStars=0;
+
+let hist=[], stats={}, earnedBadges=[], stickers=[], streak=0, lastStudyDate='';
+['math','money','korean','english','hanja','music_theory','piano','violin'].forEach(k=>stats[k]={c:0,t:0,level:1,done:false});
+
+// 데일리 미션 정의
+const MISSIONS=[
+  {id:'math',subj:'math',label:'수학 문제 10개 풀기',icon:'➕',target:10,reward:'⭐×3'},
+  {id:'korean',subj:'korean',label:'국어 문제 10개 풀기',icon:'가',target:10,reward:'⭐×3'},
+  {id:'english',subj:'english',label:'영어 단어 10개 풀기',icon:'🔤',target:10,reward:'⭐×3'},
+  {id:'hanja',subj:'hanja',label:'한자 10개 풀기',icon:'字',target:10,reward:'⭐×2'},
+  {id:'money',subj:'money',label:'동전 세기 10문제',icon:'🪙',target:10,reward:'⭐×2'},
+  {id:'music',subj:'music_theory',label:'음악 이론 10문제',icon:'🎵',target:10,reward:'⭐×2'},
+];
+let missionProgress={};
+let todayKey='';
+
+function load(){
+  try{hist=JSON.parse(localStorage.getItem('sh')||'[]');}catch(e){}
+  try{const ss=JSON.parse(localStorage.getItem('ss')||'{}');Object.keys(stats).forEach(k=>{if(ss[k])stats[k]={...stats[k],...ss[k]};});}catch(e){}
+  try{earnedBadges=JSON.parse(localStorage.getItem('eb')||'[]');}catch(e){}
+  try{stickers=JSON.parse(localStorage.getItem('st')||'[]');}catch(e){}
+  try{totalStars=parseInt(localStorage.getItem('ts')||'0');}catch(e){}
+  try{streak=parseInt(localStorage.getItem('streak')||'0');}catch(e){}
+  try{lastStudyDate=localStorage.getItem('lsd')||'';}catch(e){}
+  todayKey=new Date().toISOString().slice(0,10);
+  try{missionProgress=JSON.parse(localStorage.getItem('mp_'+todayKey)||'{}');}catch(e){}
+  updateStreak();
+}
+function save(){
+  try{
+    localStorage.setItem('ss',JSON.stringify(stats));
+    localStorage.setItem('sh',JSON.stringify(hist));
+    localStorage.setItem('eb',JSON.stringify(earnedBadges));
+    localStorage.setItem('st',JSON.stringify(stickers));
+    localStorage.setItem('ts',totalStars);
+    localStorage.setItem('streak',streak);
+    localStorage.setItem('lsd',lastStudyDate);
+    localStorage.setItem('mp_'+todayKey,JSON.stringify(missionProgress));
+  }catch(e){}
+}
+
+function updateStreak(){
+  const today=new Date().toISOString().slice(0,10);
+  const yesterday=new Date(Date.now()-864e5).toISOString().slice(0,10);
+  if(lastStudyDate===today) return;
+  if(lastStudyDate===yesterday) streak++;
+  else if(lastStudyDate!==today) { if(lastStudyDate!==yesterday) streak=1; }
+}
+function markStudiedToday(){
+  const today=new Date().toISOString().slice(0,10);
+  if(lastStudyDate!==today){ lastStudyDate=today; if(streak===0)streak=1; save(); }
+}
+
+// ══════════════════════════════════════════
+//  AUDIO (Web Audio API)
+// ══════════════════════════════════════════
+let audioCtx=null;
+function getAudio(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq,dur,type='sine',vol=0.3){
+  try{
+    const ctx=getAudio();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+function playCorrect(){
+  playTone(523,.1,'sine',.25);
+  setTimeout(()=>playTone(659,.1,'sine',.25),100);
+  setTimeout(()=>playTone(784,.2,'sine',.25),200);
+}
+function playWrong(){
+  playTone(200,.15,'sawtooth',.2);
+  setTimeout(()=>playTone(150,.2,'sawtooth',.2),150);
+}
+function playLevelup(){
+  [523,587,659,698,784].forEach((f,i)=>setTimeout(()=>playTone(f,.15,'sine',.3),i*100));
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='homeScreen') updateHomeUI();
+  if(id==='subjectMenu') updateSubjectMenu();
+  if(id==='missionScreen') renderMission();
+  if(id==='parentScreen') renderParent();
+  if(id==='badgesScreen') renderBadges();
+}
+function getMusicBack(subj){ return MUSIC_SUBJS.includes(subj)?'musicMenu':'subjectMenu'; }
+function goBack(){ stopTimer(); showScreen(getMusicBack(curSubject)); }
+function quitQuiz(){ stopTimer(); questions=[]; goBack(); }
+function goLearn(){ showLearn(curSubject); }
+function showMusicMenu(){ showScreen('musicMenu'); }
+function gotoSubjectMenu(){ showScreen('subjectMenu'); }
+
+// ══════════════════════════════════════════
+//  HOME UI
+// ══════════════════════════════════════════
+function updateHomeUI(){
+  const ch=getCharacter();
+  document.getElementById('homeChar').textContent=ch.emoji;
+  document.getElementById('homeStreak').textContent=`🔥 ${streak}일 연속`;
+  document.getElementById('homeCharLevel').textContent=`${ch.emoji} ${ch.name}`;
+}
+function getCharacter(){
+  for(let i=CHARS.length-1;i>=0;i--){ if(totalStars>=CHARS[i].stars) return CHARS[i]; }
+  return CHARS[0];
+}
+function updateSubjectMenu(){
+  const ch=getCharacter();
+  document.getElementById('starDisplay').textContent=`⭐ 오늘 모은 별: ${totalStars}개  |  🔥 ${streak}일 연속`;
+  document.getElementById('charDisplay').textContent=ch.emoji;
+  document.getElementById('charName').textContent=`${ch.name} 레벨`;
+  // 미션 도트 업데이트
+  MISSIONS.forEach(m=>{
+    const dot=document.getElementById('mdot-'+m.id);
+    if(!dot) return;
+    const prog=missionProgress[m.id]||0;
+    dot.className='mission-dot'+(prog>=m.target?' done':'');
+  });
+}
+
+// ══════════════════════════════════════════
+//  DAILY MISSION
+// ══════════════════════════════════════════
+function renderMission(){
+  const today=new Date();
+  document.getElementById('missionDate').textContent=today.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  let done=0;
+  const list=document.getElementById('missionList');
+  list.innerHTML='';
+  MISSIONS.forEach(m=>{
+    const prog=missionProgress[m.id]||0;
+    const isDone=prog>=m.target;
+    if(isDone) done++;
+    const el=document.createElement('div');
+    el.className='mission-item'+(isDone?' done':'');
+    el.onclick=()=>{ curSubject=m.subj; showScreen('subjectMenu'); };
+    el.innerHTML=`<div class="mission-check${isDone?' done':''}">${isDone?'✅':m.icon}</div>
+      <div class="mission-info">
+        <div class="mission-name">${m.label}</div>
+        <div class="mission-sub">${Math.min(prog,m.target)} / ${m.target} 완료 · 보상: ${m.reward}</div>
+      </div>
+      <div class="mission-reward">${isDone?'✅':'▶'}</div>`;
+    list.appendChild(el);
+  });
+  const pct=Math.round(done/MISSIONS.length*100);
+  document.getElementById('missionBar').style.width=pct+'%';
+  document.getElementById('missionPct').textContent=pct+'%';
+}
+
+function updateMissionProgress(subj, questionsAnswered){
+  // 서브젝트→미션 매핑
+  const map={math:'math',money:'money',korean:'korean',english:'english',hanja:'hanja',music_theory:'music',piano:'music',violin:'music'};
+  const mid=map[subj];
+  if(!mid) return;
+  missionProgress[mid]=(missionProgress[mid]||0)+questionsAnswered;
+}
+
+// ══════════════════════════════════════════
+//  PICK SUBJECT
+// ══════════════════════════════════════════
+function pickSubject(subj){
+  curSubject=subj;
+  curLevel=stats[subj]?stats[subj].level||1:1;
+  if(!stats[subj]) stats[subj]={c:0,t:0,level:1,done:false};
+  if(stats[subj].t>0) showSubjectChoice(subj);
+  else showLevelTest(subj);
+}
+
+function showSubjectChoice(subj){
+  const el=document.getElementById('ltContent');
+  el.innerHTML='';
+  const lvLabels=['','🌱 초급','🌿 중급','🌳 고급','⭐ 최고급'];
+  const lv=stats[subj].level||1;
+  const box=document.createElement('div');
+  box.className='ltcard'; box.style.animation='popIn .4s';
+  const sj=subj;
+  box.innerHTML='<div style="font-size:2.5rem;margin-bottom:8px;">'+ICONS[sj]+'</div>'+
+    '<div style="font-size:1.2rem;font-weight:900;color:var(--dark);margin-bottom:4px;">'+NAMES[sj]+'</div>'+
+    '<div style="font-size:1.3rem;font-weight:900;color:var(--purple);margin:8px 0;">'+lvLabels[lv]+'</div>'+
+    '<div style="font-size:.85rem;color:#888;margin-bottom:18px;">총 '+stats[sj].t+'문제 풀었어요!</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;">'+
+    '<button class="btn btn-p" id="scLearn">📖 배우기</button>'+
+    '<button class="btn btn-y" id="scQuiz">🎮 문제 풀기</button>'+
+    '<button class="btn btn-sm btn-w" id="scRetest" style="font-size:.82rem;">🔄 레벨 다시 테스트</button>'+
+    '</div>';
+  el.appendChild(box);
+  document.getElementById('scLearn').onclick=()=>showLearn(sj);
+  document.getElementById('scQuiz').onclick=()=>startQuiz();
+  document.getElementById('scRetest').onclick=()=>showLevelTest(sj);
+  document.getElementById('ltTitle').textContent=NAMES[subj]+' '+lvLabels[lv];
+  showScreen('levelTest');
+}
+
+// ══════════════════════════════════════════
+//  LEVEL TEST
+// ══════════════════════════════════════════
+const LT={
+  math:[
+    {big:'3 + 4 = ?',answer:7,choices:[5,6,7,8],hint:'손가락으로 세어봐요!',level:1},
+    {big:'9 - 3 = ?',answer:6,choices:[4,5,6,7],hint:'9에서 3을 빼요',level:1},
+    {big:'10 + 5 = ?',answer:15,choices:[13,14,15,16],hint:'10 더하기 5예요',level:2},
+    {big:'20 - 8 = ?',answer:12,choices:[10,11,12,13],hint:'20에서 8을 빼요',level:2},
+    {big:'13 + 24 = ?',answer:37,choices:[34,36,37,39],hint:'십·일의 자리를 각각 더해요',level:3},
+    {big:'45 - 12 = ?',answer:33,choices:[31,32,33,35],hint:'십·일의 자리를 각각 빼요',level:3},
+  ],
+  money:[
+    {big:'🪙10원 + 🪙10원',answer:'20원',choices:['15원','20원','25원','30원'],hint:'10원짜리 두 개예요',level:1},
+    {big:'🪙50원 + 🪙10원',answer:'60원',choices:['50원','55원','60원','70원'],hint:'50원에 10원을 더해요',level:2},
+    {big:'🪙100원 + 🪙50원',answer:'150원',choices:['100원','130원','150원','160원'],hint:'100원에 50원을 더해요',level:3},
+    {big:'🪙500원 + 🪙100원',answer:'600원',choices:['500원','550원','600원','650원'],hint:'500원에 100원을 더해요',level:4},
+  ],
+  korean:[
+    {big:'사과',answer:'사과',choices:['사과','바나나','포도','딸기'],hint:'빨간 과일이에요',level:1,type:'read'},
+    {big:'나는 □교에 가요',answer:'학',choices:['학','박','악','낙'],hint:'공부하는 곳이에요',level:2,type:'fill'},
+    {big:'"해가 뜬다" 에서 해는?',answer:'태양',choices:['달','태양','별','구름'],hint:'하늘에 있는 밝은 것',level:3,type:'comprehend'},
+  ],
+  english:[
+    {big:'🍎 = ?',answer:'apple',choices:['apple','banana','grape','mango'],hint:'사과예요',level:1},
+    {big:'🐶 = ?',answer:'dog',choices:['cat','dog','bird','fish'],hint:'강아지예요',level:1},
+    {big:'a-p-?-l-e',answer:'p',choices:['a','b','p','q'],hint:'apple의 세 번째 글자예요',level:2},
+  ],
+  hanja:[
+    {big:'山',answer:'산',choices:['산','강','나무','하늘'],hint:'뾰족하게 솟아있어요',level:1},
+    {big:'水',answer:'물',choices:['물','불','흙','바람'],hint:'흐르는 것이에요',level:1},
+    {big:'母',answer:'어머니',choices:['어머니','아버지','형제','친구'],hint:'엄마를 뜻하는 한자예요',level:2},
+  ],
+  music_theory:[
+    {big:'♩ 이 음표의 이름은?',answer:'4분음표',choices:['2분음표','4분음표','8분음표','온음표'],hint:'가장 기본이 되는 음표예요',level:1},
+    {big:'4/4박자 한 마디는 몇 박?',answer:'4박',choices:['2박','3박','4박','8박'],hint:'분자가 박자 수예요',level:2},
+  ],
+  piano:[
+    {big:'피아노 "도"는?',answer:'검은 건반 2개 묶음 왼쪽',choices:['검은 건반 2개 묶음 왼쪽','검은 건반 3개 묶음 왼쪽','흰 건반 맨 왼쪽','중간 흰 건반'],hint:'검은 건반 2개 묶음을 찾아봐요',level:1},
+    {big:'올바른 손 모양은?',answer:'달걀을 쥔 것처럼 둥글게',choices:['손가락을 쭉 펴서','달걀을 쥔 것처럼 둥글게','주먹처럼 꽉','손목을 꺾어서'],hint:'달걀 손 모양!',level:2},
+  ],
+  violin:[
+    {big:'바이올린 4줄 순서 (낮→높)는?',answer:'G-D-A-E',choices:['G-D-A-E','A-D-G-E','E-A-D-G','D-G-A-E'],hint:'낮은 G줄부터 높은 E줄',level:1},
+    {big:'튜닝 기준음 줄은?',answer:'A줄',choices:['G줄','D줄','A줄','E줄'],hint:'국제 표준음 440Hz',level:2},
+  ],
+};
+
+let ltAnswers=[];
+function showLevelTest(subj){
+  ltAnswers=[];
+  document.getElementById('ltTitle').textContent=NAMES[subj]+' 레벨 테스트 🎯';
+  showScreen('levelTest');
+  renderLT(0);
+}
+function renderLT(idx){
+  const qs=LT[curSubject]||[];
+  const el=document.getElementById('ltContent');
+  el.innerHTML='';
+  if(idx>=qs.length){ finishLevelTest(); return; }
+  const q=qs[idx];
+  const card=document.createElement('div');
+  card.className='ltcard';
+  card.innerHTML='<div class="ltstatus">테스트 '+(idx+1)+' / '+qs.length+'</div>'+
+    '<div class="ltq">정답을 골라보세요!</div>'+
+    '<div class="ltbig">'+q.big+'</div>'+
+    '<div class="lthint">💡 '+q.hint+'</div>';
+  el.appendChild(card);
+  const grid=document.createElement('div'); grid.className='ltchoices';
+  q.choices.forEach(ch=>{
+    const btn=document.createElement('button'); btn.className='ltbtn';
+    btn.textContent=ch;
+    btn.onclick=()=>{
+      const ok=String(ch)===String(q.answer);
+      btn.classList.add(ok?'c':'w');
+      if(!ok) grid.querySelectorAll('.ltbtn').forEach(b=>{if(b.textContent==String(q.answer))b.classList.add('c');});
+      ltAnswers.push({level:q.level,correct:ok});
+      grid.querySelectorAll('.ltbtn').forEach(b=>b.disabled=true);
+      if(ok) playCorrect(); else playWrong();
+      setTimeout(()=>renderLT(idx+1),900);
+    };
+    grid.appendChild(btn);
+  });
+  el.appendChild(grid);
+}
+function finishLevelTest(){
+  let det=1;
+  const byL={};
+  ltAnswers.forEach(a=>{if(!byL[a.level])byL[a.level]={c:0,t:0};byL[a.level].t++;if(a.correct)byL[a.level].c++;});
+  for(let lv=1;lv<=4;lv++){const d=byL[lv];if(d&&d.c/d.t>=0.5)det=lv;else if(d)break;}
+  curLevel=det; stats[curSubject].level=det; save();
+  const el=document.getElementById('ltContent'); el.innerHTML='';
+  const lvLabels=['','🌱 초급','🌿 중급','🌳 고급','⭐ 최고급'];
+  const box=document.createElement('div'); box.className='ltcard'; box.style.animation='levelup .5s ease-out';
+  box.innerHTML='<div style="font-size:2.5rem;margin-bottom:10px;">🎯</div>'+
+    '<div style="font-size:1.3rem;font-weight:900;color:var(--dark);margin-bottom:4px;">테스트 완료!</div>'+
+    '<div style="font-size:2rem;font-weight:900;color:var(--purple);margin:12px 0;">'+lvLabels[det]+'</div>'+
+    '<div style="font-size:.88rem;color:#666;margin-bottom:18px;">레벨 '+det+'에 맞는 문제로 공부할게요!</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;">'+
+    '<button class="btn btn-p" id="ltLearn">📖 먼저 배우기</button>'+
+    '<button class="btn btn-y" id="ltQuiz">🎮 바로 문제 풀기</button>'+
+    '</div>';
+  el.appendChild(box);
+  document.getElementById('ltLearn').onclick=()=>showLearn(curSubject);
+  document.getElementById('ltQuiz').onclick=()=>startQuiz();
+  playLevelup();
+}
+
+// ══════════════════════════════════════════
+//  LEARN
+// ══════════════════════════════════════════
+const LEARN={
+  math:[
+    {icon:'➕',title:'덧셈이란?',content:'<b>덧셈</b>은 두 수를 합치는 거예요!<br><br>사과 🍎 3개 + 🍎 2개 = 🍎 5개<br><br>손가락으로 세어봐요:<br>왼손 3개, 오른손 2개 → 합치면 5!'},
+    {icon:'✏️',title:'일의 자리 덧셈',content:'<b>3 + 4</b> 를 계산해볼까요?<br><br>🔵🔵🔵 + 🔴🔴🔴🔴 = 7개!<br><br>이렇게 하나씩 세면 쉬워요 😊'},
+    {icon:'🔟',title:'10 만들기',content:'<b>10</b>을 만들면 덧셈이 쉬워요!<br><br>8 + 5 = ?<br>👉 8 + 2 = 10, 남은 3을 더하면 13!<br><br>10의 짝꿍: 1+9, 2+8, 3+7, 4+6, 5+5'},
+    {icon:'➖',title:'뺄셈이란?',content:'<b>뺄셈</b>은 빼는 거예요!<br><br>사탕 🍬 5개 중 2개를 먹었어요<br>5 - 2 = 3개가 남아요!<br><br>큰 수에서 작은 수를 빼요 😊'},
+  ],
+  money:[
+    {icon:'🪙',title:'동전을 알아봐요',content:'우리나라 동전 4가지!<br><br>🪙 <b>10원</b> — 가장 작은 동전<br>💛 <b>50원</b> — 10원짜리 5개<br>🟡 <b>100원</b> — 10원짜리 10개<br>⚪ <b>500원</b> — 100원짜리 5개'},
+    {icon:'➕',title:'동전 더하기',content:'동전을 더할 때는 같은 종류끼리 모아요!<br><br>10원 🪙🪙🪙 = 30원<br>50원 💛💛 = 100원<br><br>30 + 100 = <b>130원</b>!'},
+    {icon:'💡',title:'쉬운 계산법',content:'<b>10원</b>: 개수 × 10<br><b>50원</b>: 개수 × 50<br><b>100원</b>: 개수 × 100<br><b>500원</b>: 개수 × 500<br><br>예) 10원 2개 + 50원 1개<br>= 20 + 50 = <b>70원</b>!'},
+  ],
+  korean:[
+    {icon:'가',title:'받침 없는 글자',content:'한글은 <b>자음</b>과 <b>모음</b>이 만나요!<br><br>ㄱ + ㅏ = <b>가</b><br>ㄴ + ㅏ = <b>나</b><br><br>가나다라마바사아자차카타파하<br>다 외워봐요! 🎵'},
+    {icon:'받',title:'받침 있는 글자',content:'글자 아래에 자음이 붙으면 <b>받침</b>이에요!<br><br>가 + ㄱ = <b>각</b><br>사 + ㅇ = <b>상</b><br><br>받침이 있으면 더 힘차게 읽어요!'},
+    {icon:'📖',title:'짧은 문장 읽기',content:'문장은 여러 낱말이 모인 거예요!<br><br><b>나는 학교에 가요.</b><br>주어: 나는 / 서술어: 가요<br>장소: 학교에<br><br>누가, 어디서, 무엇을 하는지 찾아봐요!'},
+    {icon:'✍️',title:'받아쓰기 연습법',content:'1️⃣ 낱말을 큰 소리로 읽어요<br>2️⃣ 눈을 감고 글자를 떠올려요<br>3️⃣ 천천히 또박또박 써요<br>4️⃣ 다시 확인해요! ✅'},
+  ],
+  english:[
+    {icon:'🔤',title:'알파벳을 배워요',content:'영어는 <b>26개 알파벳</b>으로 써요!<br><br>A B C D E F G H I J K L M<br>N O P Q R S T U V W X Y Z<br><br>노래로 외우면 쉬워요! 🎵'},
+    {icon:'🍎',title:'과일 영어단어',content:'사과 → <b>apple</b><br>바나나 → <b>banana</b><br>포도 → <b>grape</b><br>딸기 → <b>strawberry</b><br><br>소리 내어 읽어봐요!'},
+    {icon:'🐾',title:'동물 영어단어',content:'강아지 → <b>dog</b><br>고양이 → <b>cat</b><br>새 → <b>bird</b><br>물고기 → <b>fish</b><br>토끼 → <b>rabbit</b>'},
+    {icon:'✏️',title:'철자 외우는 법',content:'1️⃣ 소리를 들으며 읽어요<br>2️⃣ 손가락으로 써봐요<br>3️⃣ 가려놓고 써봐요<br><br>예) <b>cat</b> = C-A-T'},
+  ],
+  hanja:[
+    {icon:'字',title:'한자란?',content:'한자는 그림에서 시작했어요:<br><br>🌞 → <b>日</b>(해 일)<br>🌙 → <b>月</b>(달 월)<br>⛰️ → <b>山</b>(뫼 산)<br>💧 → <b>水</b>(물 수)'},
+    {icon:'🌿',title:'자연 한자',content:'<b>山</b> — 산<br><b>水</b> — 물<br><b>火</b> — 불<br><b>木</b> — 나무'},
+    {icon:'👨‍👩‍👧',title:'사람 한자',content:'<b>人</b> — 사람<br><b>父</b> — 아버지<br><b>母</b> — 어머니<br><b>子</b> — 아들·자녀'},
+    {icon:'🔢',title:'숫자 한자',content:'<b>一</b>(일) <b>二</b>(이) <b>三</b>(삼)<br><b>四</b>(사) <b>五</b>(오) <b>六</b>(육)<br><b>七</b>(칠) <b>八</b>(팔) <b>九</b>(구) <b>十</b>(십)'},
+  ],
+  music_theory:[
+    {icon:'📄',title:'악보란?',content:'악보는 음악을 <b>기호와 음표</b>로 적어놓은 것이에요!<br><br>• <b>오선</b> — 5개의 줄<br>• <b>음표</b> — 음의 높이와 길이<br>• <b>박자표</b> — 리듬의 규칙'},
+    {icon:'🎵',title:'음표와 쉼표',content:'𝅝 <b>온음표</b> = 4박<br>𝅗𝅥 <b>2분음표</b> = 2박<br>♩ <b>4분음표</b> = 1박<br>♪ <b>8분음표</b> = 반박<br><br>쉼표는 같은 길이의 <b>침묵</b>이에요!'},
+    {icon:'🎼',title:'오선과 음자리표',content:'높은음자리표(𝄞) 기준:<br>제1선: 미(E)<br>제2선: 솔(G)<br>제3선: 시(B)<br>제4선: 레(D)<br>제5선: 파(F)<br><br>🧠 "Every Good Boy Does Fine"'},
+    {icon:'👏',title:'박자와 리듬',content:'<b>4/4박자</b>: 강-약-중강-약<br><b>3/4박자</b>: 강-약-약 (왈츠!)<br><b>2/4박자</b>: 강-약 (행진곡)<br><br>손뼉으로 박자를 쳐봐요! 👏'},
+    {icon:'🔤',title:'나타냄말',content:'<b>빠르기:</b><br>Largo — 아주 느리게<br>Andante — 걷는 속도로<br>Allegro — 빠르게<br><br><b>셈여림:</b><br>p — 여리게 / f — 세게'},
+    {icon:'🎵',title:'악보 기호들',content:'<b>도돌이표</b> — 반복<br><b>페르마타</b> — 충분히 길게<br><b>스타카토(•)</b> — 짧고 끊어서<br><b>레가토(⌒)</b> — 부드럽게 이어서<br><b>크레셴도(‹)</b> — 점점 크게'},
+  ],
+  piano:[
+    {icon:'🎹',title:'피아노 앉는 자세',content:'✅ 팔꿈치가 건반과 같은 높이<br>✅ 등은 곧게<br>✅ 발은 바닥에 평평하게<br>✅ 의자와 건반 사이 주먹 하나 거리<br><br>❌ 등 구부리기 / 어깨 올리기'},
+    {icon:'🤲',title:'손 모양과 손가락 번호',content:'엄지(1) 검지(2) 중지(3) 약지(4) 소지(5)<br><br>✅ 달걀을 쥔 것처럼 둥글게<br>✅ 손가락 끝으로 건반 누르기<br>✅ 손목은 자연스럽게'},
+    {icon:'🎹',title:'건반 위치',content:'검은 건반으로 위치를 찾아요:<br><br>• 2개 묶음 왼쪽 = <b>도(C)</b><br>• 도 옆 = 레, 미<br>• 3개 묶음 왼쪽 = <b>파(F)</b><br>• 파 옆 = 솔, 라, 시'},
+    {icon:'📈',title:'C장조 스케일',content:'도(1)-레(2)-미(3)-파(1)-솔(2)-라(3)-시(4)-도(5)<br><br>미(3) 다음에 엄지(1)를 파 아래로 넘겨요!<br><br>처음엔 <b>아주 천천히</b> 연습해요 🎯'},
+    {icon:'🎶',title:'하농 기초 연습',content:'<b>하농</b>은 손가락 독립 훈련이에요!<br><br>도-미-파-솔-라-솔-파-미 (반복)<br><br>1️⃣ 오른손만<br>2️⃣ 왼손만<br>3️⃣ 양손 함께<br><br>매일 5~10분씩! 💪'},
+    {icon:'🦋',title:'나비야 연주',content:'<b>나비야 (오른손)</b><br>도도솔솔 라라솔— (나비야 나비야)<br>파파미미 레레도— (이리 날아 오너라)<br><br>손가락: 1 1 2 2 3 3 2<br>천천히 한 음씩 찾아서 쳐봐요! 🦋'},
+    {icon:'✅',title:'피아노 실습 체크',content:'📋 매일 연습 목록:<br>• 손가락 스트레칭 (2분)<br>• C장조 스케일 (5분)<br>• 하농 1번 (5분)<br>• 배우는 곡 (10분)<br><br>⏰ 하루 30분이면 충분해요! 🌟'},
+  ],
+  violin:[
+    {icon:'🎻',title:'바이올린 구조',content:'<b>몸통:</b> 울림통, f홀, 줄받침(브리지)<br><b>목:</b> 지판, 너트, 페그(조율못), 스크롤<br><b>활:</b> 활대 + 말총(활털)<br><br>각 부분의 역할을 기억해요!'},
+    {icon:'🤲',title:'쥐는 자세',content:'<b>바이올린 잡기:</b><br>✅ 왼쪽 어깨와 턱 사이에<br>✅ 어깨받침(숄더레스트) 추천<br><br><b>활 잡기:</b><br>✅ 엄지를 활대 아래에 구부려<br>✅ 전체적으로 relaxed하게'},
+    {icon:'🎵',title:'튜닝 (GDAE)',content:'G줄 — D줄 — A줄 — E줄<br><br>1️⃣ A줄을 먼저 맞춰요 (440Hz)<br>2️⃣ 튜너 앱 또는 피아노 사용<br>3️⃣ 페그는 눌러가며 돌려요<br>4️⃣ 파인튜너로 마무리<br><br>⚠️ 처음엔 선생님과 함께!'},
+    {icon:'🔧',title:'줄 가는 법',content:'1️⃣ 끊어진 줄 제거<br>2️⃣ 새 줄 끝을 테일피스에 걸기<br>3️⃣ 다른 끝을 페그에 감기<br>4️⃣ 시계방향으로 감기<br>5️⃣ 튜닝으로 음 맞추기<br><br>⚠️ 처음엔 선생님과 함께!'},
+    {icon:'🏹',title:'활 긋기 기초',content:'• 오픈 스트링(빈 줄)부터 시작<br>• 활이 줄과 <b>직각(90도)</b> 유지<br>• 팔 전체로 자연스럽게<br><br>1️⃣ 다운보우(↓) — 밀어서<br>2️⃣ 업보우(↑) — 당겨서<br>3️⃣ G줄부터 E줄까지'},
+    {icon:'📈',title:'스케일 연습',content:'<b>D장조</b>로 시작해요!<br><br>A줄: 레-미-파#-솔<br>E줄: 라-시-도#-레<br><br>왼손 손가락 번호:<br>0=빈줄 / 1=검지 / 2=중지 / 3=약지'},
+    {icon:'⭐',title:'반짝반짝 작은 별',content:'<b>E줄 기본 음:</b><br>빈줄=라 / 1=시 / 2=도# / 3=레<br><br><b>반짝반짝:</b><br>라라-미미-파파-미— (반짝반짝)<br>레레-도도-시시-라— (작은 별)<br><br>활은 다운(↓)업(↑) 번갈아요! ⭐'},
+    {icon:'✅',title:'바이올린 실습 체크',content:'📋 매일 연습 목록:<br>• 자세 점검 (1분)<br>• 오픈 스트링 보잉 (5분)<br>• D장조 스케일 (5분)<br>• 배우는 곡 (10분)<br><br>⏰ 하루 20~30분이면 충분해요! 🎻'},
+  ],
+};
+
+function showLearn(subj){
+  curSubject=subj;
+  learnPages=LEARN[subj]||[];
+  learnPage=0;
+  document.getElementById('learnTitle').textContent=NAMES[subj]+' 배우기 📖';
+  showScreen('learnScreen');
+  renderLearnPage();
+}
+function renderLearnPage(){
+  const p=learnPages[learnPage];
+  document.getElementById('learnContent').innerHTML='<div class="learncard"><div class="learn-icon">'+p.icon+'</div><div class="learn-title">'+p.title+'</div><div class="learn-content">'+p.content+'</div></div>';
+  const dots=document.getElementById('learnDots');
+  dots.innerHTML=learnPages.map((_,i)=>'<div class="ldot'+(i===learnPage?' on':'')+'" onclick="learnPage='+i+';renderLearnPage()"></div>').join('');
+  document.getElementById('learnPrev').disabled=learnPage===0;
+  document.getElementById('learnNext').textContent=learnPage===learnPages.length-1?'🎮 문제 풀기!':'다음 →';
+}
+function learnNav(dir){
+  const next=learnPage+dir;
+  if(next>=learnPages.length){ startQuiz(); return; }
+  learnPage=Math.max(0,Math.min(learnPages.length-1,next));
+  renderLearnPage();
+}
+
+// ══════════════════════════════════════════
+//  QUIZ GENERATION
+// ══════════════════════════════════════════
+function startQuiz(){
+  curQ=0; score=0; typedAns=''; hintLv=0; bonusStars=0;
+  questions=genQuestions(curSubject,curLevel);
+  const lvL=['','🌱초급','🌿중급','🌳고급','⭐최고급'];
+  document.getElementById('qBadge').textContent=NAMES[curSubject];
+  document.getElementById('qBadge').style.background=COLORS[curSubject]||'#6BCB77';
+  document.getElementById('qLevel').textContent=lvL[curLevel]||'';
+  showScreen('quizScreen');
+  renderQ();
+}
+function genQuestions(subj,lv){
+  if(subj==='math') return genMath(lv);
+  if(subj==='money') return genMoney(lv);
+  if(subj==='korean') return genKorean(lv);
+  if(subj==='english') return genEnglish(lv);
+  if(subj==='hanja') return genHanja(lv);
+  if(subj==='music_theory') return genMusicTheory();
+  if(subj==='piano') return genPiano();
+  if(subj==='violin') return genViolin();
+  return [];
+}
+
+function genMath(lv){
+  const qs=[];
+  for(let i=0;i<10;i++){
+    let a,b,op,ans;
+    const doSub=Math.random()<.4;
+    if(lv===1){a=Math.floor(Math.random()*5)+1;b=Math.floor(Math.random()*4)+1;op=doSub&&a>b?'-':'+';}
+    else if(lv===2){a=(Math.floor(Math.random()*5)+1)*10;b=(Math.floor(Math.random()*5)+1)*10;op=doSub&&a>b?'-':'+';}
+    else{a=Math.floor(Math.random()*19)+11;b=Math.floor(Math.random()*9)+1;op=doSub&&a>b?'-':'+';}
+    ans=op==='+'?a+b:a-b;
+    const ws=new Set();while(ws.size<3){const w=ans+(Math.floor(Math.random()*7)-3);if(w!==ans&&w>=0)ws.add(w);}
+    qs.push({type:'choice',question:'계산하면 얼마일까요?',big:a+' '+op+' '+b+' = ?',hint:op==='+'?a+'에 '+b+'를 더해요':a+'에서 '+b+'를 빼요',answer:ans,choices:[...ws,ans].sort(()=>Math.random()-.5)});
+  }
+  return qs;
+}
+function genMoney(lv){
+  const pools={1:[10,10,50],2:[10,50,50],3:[50,100,100],4:[100,500,100,50]};
+  const pool=pools[Math.min(lv,4)];
+  const qs=[];
+  for(let i=0;i<10;i++){
+    const cnt=Math.floor(Math.random()*3)+2;
+    const coins=[];let sum=0;
+    for(let j=0;j<cnt;j++){const c=pool[Math.floor(Math.random()*pool.length)];coins.push(c);sum+=c;}
+    const ws=new Set();while(ws.size<3){const w=sum+[-50,50,100,-100,150,-150][Math.floor(Math.random()*6)];if(w!==sum&&w>0)ws.add(w);}
+    qs.push({type:'money',question:'동전을 모두 합치면 얼마일까요?',big:'',hint:'동전 값을 하나씩 더해요!',answer:sum,choices:[...ws,sum].sort(()=>Math.random()-.5),coins});
+  }
+  return qs;
+}
+const KOR_DICT={
+  1:['사과','나무','하늘','바람','학교','친구','가족','강아지','고양이','나비','연필','책','가방','공책','지우개'],
+  2:['선생님','공부해요','놀이터','자전거','도서관','할머니','할아버지','꽃잎','바닷가','구름','우산','모자','신발'],
+  3:['나는 학교에 가요','강아지가 뛰어요','꽃이 예뻐요','책을 읽어요','밥을 먹어요','비가 내려요','친구와 놀아요','엄마가 좋아요'],
+};
+const KOR_READ=[
+  {p:'봄이 되었어요. 꽃이 피고 새가 노래해요.',qs:[{q:'어떤 계절인가요?',a:'봄',ch:['봄','여름','가을','겨울']},{q:'새는 무엇을 하나요?',a:'노래해요',ch:['자요','노래해요','먹어요','날아요']}]},
+  {p:'토끼가 당근을 좋아해요. 밭에서 당근을 뽑았어요.',qs:[{q:'토끼가 좋아하는 것은?',a:'당근',ch:['사과','당근','바나나','딸기']},{q:'어디서 뽑았나요?',a:'밭',ch:['집','학교','밭','공원']}]},
+  {p:'수아는 노란 우산을 썼어요. 빗소리가 도닥도닥 들려요.',qs:[{q:'우산 색깔은?',a:'노란색',ch:['빨간색','파란색','노란색','초록색']},{q:'빗소리는?',a:'도닥도닥',ch:['우르릉','도닥도닥','쿵쾅','시원시원']}]},
+];
+function genKorean(lv){
+  const qs=[];
+  if(lv<=2){
+    const pool=lv===1?KOR_DICT[1]:[...KOR_DICT[1],...KOR_DICT[2]];
+    [...pool].sort(()=>Math.random()-.5).slice(0,10).forEach(w=>{
+      qs.push({type:'dictation',question:'낱말을 보고 따라 써보세요!',big:'',hint:'',answer:w,speakText:w});
+    });
+  } else {
+    const rpool=[];
+    KOR_READ.forEach(s=>s.qs.forEach(q=>rpool.push({type:'choice',question:q.q,big:s.p,hint:'글을 잘 읽어봐요!',answer:q.a,choices:[...q.ch].sort(()=>Math.random()-.5),isReading:true})));
+    const dict=KOR_DICT[3].sort(()=>Math.random()-.5).slice(0,5).map(w=>({type:'dictation',question:'문장을 보고 써보세요!',big:'',hint:'',answer:w,speakText:w}));
+    qs.push(...rpool.sort(()=>Math.random()-.5).slice(0,5),...dict);
+  }
+  return qs.slice(0,10);
+}
+const ENG_WORDS=[
+  {en:'apple',ko:'사과',img:'🍎'},{en:'banana',ko:'바나나',img:'🍌'},
+  {en:'cat',ko:'고양이',img:'🐱'},{en:'dog',ko:'강아지',img:'🐶'},
+  {en:'sun',ko:'해',img:'☀️'},{en:'moon',ko:'달',img:'🌙'},
+  {en:'book',ko:'책',img:'📚'},{en:'car',ko:'자동차',img:'🚗'},
+  {en:'fish',ko:'물고기',img:'🐟'},{en:'bird',ko:'새',img:'🐦'},
+  {en:'tree',ko:'나무',img:'🌳'},{en:'house',ko:'집',img:'🏠'},
+  {en:'ball',ko:'공',img:'⚽'},{en:'star',ko:'별',img:'⭐'},
+  {en:'cake',ko:'케이크',img:'🎂'},{en:'milk',ko:'우유',img:'🥛'},
+];
+function genEnglish(lv){
+  const picked=[...ENG_WORDS].sort(()=>Math.random()-.5).slice(0,10);
+  return picked.map(w=>{
+    if(lv===1){const ws=ENG_WORDS.filter(x=>x.en!==w.en).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.en);return{type:'choice',question:"'"+w.ko+"'는 영어로?",big:w.img+' '+w.ko,hint:'',answer:w.en,choices:[...ws,w.en].sort(()=>Math.random()-.5)};}
+    else if(lv===2){const ws=ENG_WORDS.filter(x=>x.ko!==w.ko).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.ko);return{type:'choice',question:"'"+w.en+"'은 무슨 뜻?",big:w.img+' '+w.en,hint:'',answer:w.ko,choices:[...ws,w.ko].sort(()=>Math.random()-.5)};}
+    else{return{type:'spell',question:"'"+w.ko+"'를 영어로 써보세요!",big:w.img+' '+w.ko,hint:w.en.length+'글자예요!',answer:w.en};}
+  });
+}
+const HANJA_DATA=[
+  {ch:'山',read:'산',mean:'산',img:'⛰️'},{ch:'水',read:'수',mean:'물',img:'💧'},
+  {ch:'火',read:'화',mean:'불',img:'🔥'},{ch:'木',read:'목',mean:'나무',img:'🌳'},
+  {ch:'日',read:'일',mean:'해·날',img:'☀️'},{ch:'月',read:'월',mean:'달',img:'🌙'},
+  {ch:'人',read:'인',mean:'사람',img:'🧑'},{ch:'母',read:'모',mean:'어머니',img:'👩'},
+  {ch:'父',read:'부',mean:'아버지',img:'👨'},{ch:'子',read:'자',mean:'아들',img:'👦'},
+  {ch:'大',read:'대',mean:'크다',img:'⬆️'},{ch:'小',read:'소',mean:'작다',img:'⬇️'},
+  {ch:'上',read:'상',mean:'위',img:'☝️'},{ch:'下',read:'하',mean:'아래',img:'👇'},
+  {ch:'學',read:'학',mean:'배우다',img:'📚'},{ch:'門',read:'문',mean:'문',img:'🚪'},
+];
+function genHanja(lv){
+  const picked=[...HANJA_DATA].sort(()=>Math.random()-.5).slice(0,10);
+  return picked.map(h=>{
+    if(lv===1){const ws=HANJA_DATA.filter(x=>x.mean!==h.mean).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.mean);return{type:'choice',question:'이 한자의 뜻은?',big:h.ch+' '+h.img,hint:"'"+h.read+"'라고 읽어요",answer:h.mean,choices:[...ws,h.mean].sort(()=>Math.random()-.5)};}
+    else{const ws=HANJA_DATA.filter(x=>x.read!==h.read).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.read);return{type:'choice',question:'이 한자를 어떻게 읽나요?',big:h.ch+' 뜻: '+h.mean,hint:'소리 내어 읽어봐요',answer:h.read,choices:[...ws,h.read].sort(()=>Math.random()-.5)};}
+  });
+}
+const MUSIC_THEORY_QS=[
+  {q:'♩ 이 음표의 이름은?',a:'4분음표',ch:['온음표','2분음표','4분음표','8분음표'],hint:'가장 기본 음표예요'},
+  {q:'온음표는 몇 박?',a:'4박',ch:['1박','2박','4박','8박'],hint:'가장 긴 음표예요'},
+  {q:'"솔"은 음계에서 몇 번째?',a:'5번째',ch:['4번째','5번째','6번째','7번째'],hint:'도레미파솔...'},
+  {q:'4/4박자 한 마디는 몇 박?',a:'4박',ch:['2박','3박','4박','6박'],hint:'분자가 박자 수예요'},
+  {q:'3/4박자는 어떤 음악?',a:'왈츠',ch:['왈츠','행진곡','록','블루스'],hint:'강-약-약 리듬이에요'},
+  {q:'Allegro는 어떤 빠르기?',a:'빠르게',ch:['느리게','보통으로','빠르게','아주 빠르게'],hint:'활기차다는 뜻이에요'},
+  {q:'"p"(piano) 기호는?',a:'여리게',ch:['세게','여리게','보통으로','점점 크게'],hint:'여리게 연주해요'},
+  {q:'"f"(forte) 기호는?',a:'세게',ch:['세게','여리게','보통으로','점점 작게'],hint:'강하게!'},
+  {q:'크레셴도는?',a:'점점 크게',ch:['점점 크게','점점 작게','갑자기 크게','갑자기 작게'],hint:'열리는 모양이에요'},
+  {q:'도돌이표는?',a:'반복',ch:['반복','멈춤','빠르게','부드럽게'],hint:'다시!'},
+  {q:'스타카토는?',a:'짧고 끊어서',ch:['짧고 끊어서','부드럽게 이어서','세게','점점 크게'],hint:'짧게 탁!'},
+  {q:'오선지는 줄이 몇 개?',a:'5개',ch:['3개','4개','5개','6개'],hint:'오선 = 다섯 선'},
+  {q:'높은음자리표 제1선의 음은?',a:'미(E)',ch:['도(C)','레(D)','미(E)','파(F)'],hint:'Every Good Boy Does Fine'},
+  {q:'♪ 이 음표의 이름은?',a:'8분음표',ch:['온음표','4분음표','8분음표','16분음표'],hint:'4분음표의 절반이에요'},
+];
+const PIANO_QS=[
+  {q:'피아노 "도"는 어디?',a:'검은 건반 2개 묶음 왼쪽',ch:['검은 건반 2개 묶음 왼쪽','검은 건반 3개 묶음 왼쪽','흰 건반 맨 왼쪽','중간 흰 건반'],hint:'검은 건반 2개 묶음을 찾아봐요'},
+  {q:'올바른 손 모양은?',a:'달걀을 쥔 것처럼 둥글게',ch:['손가락을 쭉 펴서','달걀을 쥔 것처럼 둥글게','주먹처럼 꽉','손목을 꺾어서'],hint:'달걀 손 모양!'},
+  {q:'피아노 엄지손가락 번호는?',a:'1번',ch:['1번','2번','3번','5번'],hint:'엄지-검지-중지-약지-소지'},
+  {q:'앉는 자세: 팔꿈치 높이는?',a:'건반과 같은 높이',ch:['건반보다 높게','건반보다 낮게','건반과 같은 높이','어깨 높이'],hint:'자연스러운 자세'},
+  {q:'C장조에서 미 다음 운지법은?',a:'엄지를 파 아래로 넘겨요',ch:['그냥 약지(4)로','엄지(1)를 파 아래로 넘겨요','손 전체 이동','검지(2)로 파'],hint:'thumb under!'},
+  {q:'하농의 목적은?',a:'손가락 독립 훈련',ch:['빠르기 훈련','손가락 독립 훈련','악보 읽기','리듬 훈련'],hint:'각 손가락을 독립적으로!'},
+  {q:'스케일 연습 순서는?',a:'오른손 → 왼손 → 양손',ch:['양손 먼저','오른손 → 왼손 → 양손','왼손 → 양손','양손만'],hint:'한 손씩 먼저!'},
+  {q:'나비야 첫 음은?',a:'도',ch:['도','레','미','솔'],hint:'나-비-야 나-비-야'},
+];
+const VIOLIN_QS=[
+  {q:'바이올린 4줄 순서 (낮→높)는?',a:'G-D-A-E',ch:['G-D-A-E','A-D-G-E','E-A-D-G','D-G-A-E'],hint:'낮은 G줄부터 높은 E줄'},
+  {q:'활을 쥘 때 엄지는?',a:'활대 아래에 구부려',ch:['활대 위에 펴서','활대 아래에 구부려','꽉 쥐어서','손바닥 전체로'],hint:'엄지는 구부려서 아래에'},
+  {q:'튜닝 기준음 줄은?',a:'A줄',ch:['G줄','D줄','A줄','E줄'],hint:'국제 표준음 440Hz'},
+  {q:'활 긋기 각도는?',a:'직각(90도)',ch:['45도','60도','직각(90도)','아무거나'],hint:'줄에 수직으로!'},
+  {q:'바이올린을 어디에 끼워요?',a:'어깨와 턱 사이',ch:['어깨 위','턱 아래만','어깨와 턱 사이','왼쪽 팔 아래'],hint:'숄더레스트가 도움돼요'},
+  {q:'다운보우는?',a:'활을 밀어서',ch:['활을 당겨서','활을 밀어서','활을 들어서','활을 내려서'],hint:'활 끝에서 뿌리 쪽으로'},
+  {q:'왼손 손가락 번호 0번은?',a:'빈 줄',ch:['엄지','빈 줄','검지','소지'],hint:'0 = 오픈 스트링'},
+  {q:'D장조 첫 음은?',a:'레(D)',ch:['도(C)','레(D)','미(E)','솔(G)'],hint:'D장조의 D = 레'},
+];
+function genMusicTheory(){return[...MUSIC_THEORY_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>({type:'choice',question:m.q,big:'📄',hint:m.hint,answer:m.a,choices:[...m.ch].sort(()=>Math.random()-.5)}));}
+function genPiano(){return[...PIANO_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>({type:'choice',question:m.q,big:'🎹',hint:m.hint,answer:m.a,choices:[...m.ch].sort(()=>Math.random()-.5)}));}
+function genViolin(){return[...VIOLIN_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>({type:'choice',question:m.q,big:'🎻',hint:m.hint,answer:m.a,choices:[...m.ch].sort(()=>Math.random()-.5)}));}
+
+// TIMER
+function startTimer(){
+  stopTimer();timeLeft=20;
+  const el=document.getElementById('qTimer');
+  if(el){el.textContent='⏱'+timeLeft;el.className='qtimer';}
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    const te=document.getElementById('qTimer');
+    if(!te){stopTimer();return;}
+    te.textContent='⏱'+timeLeft;
+    if(timeLeft<=5)te.className='qtimer warning';
+    if(timeLeft<=0){stopTimer();checkAns('__timeout__',questions[curQ]?questions[curQ].answer:'',null,false,true);}
+  },1000);
+}
+function stopTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}const el=document.getElementById('qTimer');if(el)el.textContent='';}
+
+// RENDER Q
+function renderQ(){
+  if(!questions[curQ])return;
+  const q=questions[curQ];const total=questions.length;hintLv=0;
+  document.getElementById('qFill').style.width=(curQ/total*100)+'%';
+  document.getElementById('qCnt').textContent=(curQ+1)+'/'+total;
+  if(q.type==='dictation'||q.isReading){document.getElementById('qQ').textContent=q.isReading?'📖 글을 읽고 질문에 답하세요!':q.question;document.getElementById('qBig').textContent='';document.getElementById('qHint').textContent='';}
+  else{document.getElementById('qQ').textContent=q.question;document.getElementById('qBig').textContent=q.big;document.getElementById('qHint').textContent=q.hint||'';}
+  const area=document.getElementById('aArea');area.innerHTML='';
+  if(q.type==='dictation')renderDictation(q,area);
+  else if(q.isReading)renderReading(q,area);
+  else if(q.type==='money')renderMoney(q,area);
+  else if(q.type==='spell')renderSpell(q,area);
+  else renderChoice(q,area);
+  if(q.type!=='dictation'&&!q.isReading&&q.type!=='spell')startTimer();
+}
+function renderDictation(q,area){
+  const card=document.createElement('div');card.className='dictcard';
+  const wd=document.createElement('div');wd.className='dictword';wd.id='dWord';wd.textContent=q.answer;
+  const lb=document.createElement('div');lb.style.cssText='font-size:.8rem;color:#5a8a5a;font-weight:700;';lb.textContent='👀 잘 보고 기억하세요!';
+  card.appendChild(wd);card.appendChild(lb);area.appendChild(card);
+  const hb=document.createElement('button');hb.className='hintbtn';hb.id='hintBtn';hb.textContent='💡 힌트 보기';hb.onclick=()=>doHint(q);area.appendChild(hb);
+  const ha=document.createElement('div');ha.id='hintArea';area.appendChild(ha);
+  typedAns='';
+  const inp=document.createElement('input');inp.type='text';inp.className='kinput';inp.id='kInp';inp.placeholder='여기에 써보세요!';
+  inp.oninput=()=>{typedAns=inp.value;};
+  inp.onkeydown=(e)=>{if(e.key==='Enter'&&typedAns.trim())checkAns(typedAns.trim(),q.answer,null,true);};
+  area.appendChild(inp);
+  const row=document.createElement('div');row.className='srow';
+  const cl=document.createElement('button');cl.className='bclear';cl.textContent='⌫ 지우기';cl.onclick=()=>{const i=document.getElementById('kInp');if(i){i.value='';typedAns='';}};
+  const su=document.createElement('button');su.className='bsub';su.textContent='✅ 확인!';su.onclick=()=>{if(typedAns.trim())checkAns(typedAns.trim(),q.answer,null,true);};
+  row.appendChild(cl);row.appendChild(su);area.appendChild(row);
+  setTimeout(()=>{const w=document.getElementById('dWord');if(w){w.textContent='???';w.style.color='#ccc';lb.textContent='💭 기억나나요?';}},4000);
+  setTimeout(()=>inp.focus(),4200);
+}
+function doHint(q){
+  hintLv++;const w=q.answer;const ha=document.getElementById('hintArea');if(!ha)return;
+  const hb=document.getElementById('hintBtn');let txt='';
+  if(hintLv===1)txt='📝 글자 수: '+w.length+'글자';
+  else if(hintLv===2)txt="🔤 첫 글자: '"+w[0]+"'";
+  else if(hintLv===3)txt='👁️ 일부: '+w.split('').map((c,i)=>i%2===0?c:'□').join('');
+  else{txt='✨ 정답: '+w;if(hb){hb.disabled=true;hb.textContent='힌트 다 봤어요';}}
+  ha.innerHTML='';const b=document.createElement('div');b.className='hintbox';b.textContent=txt;ha.appendChild(b);
+  if(hintLv<4&&hb)hb.textContent='💡 힌트 더 보기 ('+hintLv+'/3)';
+}
+function renderReading(q,area){
+  const p=document.createElement('div');p.style.cssText='background:#fffef5;border:2px solid var(--sun);border-radius:14px;padding:14px;font-size:.93rem;line-height:1.9;color:var(--dark);width:100%;margin-bottom:10px;';p.textContent=q.big;area.appendChild(p);
+  const ql=document.createElement('div');ql.style.cssText='font-size:.98rem;font-weight:900;color:var(--dark);margin-bottom:8px;width:100%;';ql.textContent='❓ '+q.question;area.appendChild(ql);
+  renderChoice(q,area);
+}
+function renderMoney(q,area){
+  const lbl=document.createElement('div');lbl.style.cssText='font-weight:700;font-size:.88rem;color:#555;margin-bottom:6px;';lbl.textContent='아래 동전들의 합계는?';area.appendChild(lbl);
+  const row=document.createElement('div');row.className='coinrow';
+  q.coins.forEach(c=>{const ch=document.createElement('span');ch.className='coinchip cc'+c;ch.textContent=c+'원';row.appendChild(ch);});
+  area.appendChild(row);renderChoice(q,area);
+}
+function renderSpell(q,area){
+  typedAns='';
+  const d=document.createElement('div');d.className='spelldsp';d.id='sDsp';d.textContent='_'.repeat(q.answer.length);area.appendChild(d);
+  const ag=document.createElement('div');ag.className='alpgrid';
+  'abcdefghijklmnopqrstuvwxyz'.split('').forEach(l=>{
+    const b=document.createElement('button');b.className='albtn';b.textContent=l.toUpperCase();
+    b.onclick=()=>{if(typedAns.length<q.answer.length){typedAns+=l;const dd=document.getElementById('sDsp');if(dd){let s='';for(let i=0;i<q.answer.length;i++)s+=typedAns[i]||'_';dd.textContent=s.toUpperCase();}}};
+    ag.appendChild(b);
+  });
+  area.appendChild(ag);
+  const row=document.createElement('div');row.className='srow';
+  const cl=document.createElement('button');cl.className='bclear';cl.textContent='⌫';cl.onclick=()=>{typedAns=typedAns.slice(0,-1);const dd=document.getElementById('sDsp');if(dd){let s='';for(let i=0;i<q.answer.length;i++)s+=typedAns[i]||'_';dd.textContent=s.toUpperCase();}};
+  const su=document.createElement('button');su.className='bsub';su.textContent='✅ 확인!';su.onclick=()=>{if(typedAns.length>0)checkAns(typedAns.toLowerCase(),q.answer,su,true);};
+  row.appendChild(cl);row.appendChild(su);area.appendChild(row);
+}
+function renderChoice(q,area){
+  const g=document.createElement('div');const long=q.choices.some(c=>String(c).length>6);g.className='achoices'+(long?' wide':'');
+  q.choices.forEach(ch=>{const b=document.createElement('button');b.className='abtn';b.textContent=ch;b.onclick=()=>checkAns(ch,q.answer,b);g.appendChild(b);});
+  area.appendChild(g);
+}
+
+// CHECK ANSWER
+function checkAns(chosen,correct,btn,isText=false,isTimeout=false){
+  stopTimer();
+  document.querySelectorAll('.abtn,.albtn,.bsub,.bclear,.hintbtn,.ltbtn').forEach(b=>b.disabled=true);
+  const norm=s=>String(s).trim().replace(/\s+/g,'');
+  const ok=!isTimeout&&norm(chosen).toLowerCase()===norm(correct).toLowerCase();
+  if(ok){score++;stats[curSubject].c++;if(btn&&!isText)btn.classList.add('c');const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#6BCB77';playCorrect();if(timeLeft>10)bonusStars++;}
+  else{if(btn&&!isText)btn.classList.add('w');document.querySelectorAll('.abtn').forEach(b=>{if(b.textContent==String(correct))b.classList.add('c');});const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#FF6B6B';const dw=document.getElementById('dWord');if(dw){dw.textContent=correct;dw.style.color='var(--dark)';}playWrong();
+    if(isTimeout){const area=document.getElementById('aArea');const msg=document.createElement('div');msg.style.cssText='background:#ffe8e8;border-radius:12px;padding:10px;text-align:center;font-weight:700;color:#c0392b;font-size:.88rem;margin-top:8px;';msg.textContent='⏱️ 시간 초과! 정답: '+correct;area.appendChild(msg);}
+  }
+  stats[curSubject].t++;save();
+  setTimeout(()=>{curQ++;if(curQ>=questions.length)showResult();else{typedAns='';renderQ();}},1100);
+}
+
+// RESULT
+function showResult(){
+  stopTimer();const total=questions.length;const pct=Math.round(score/total*100);
+  const stars=score>=total?3:score>=Math.ceil(total*.6)?2:score>=1?1:0;
+  const earnedNow=stars+bonusStars;totalStars+=earnedNow;
+  updateMissionProgress(curSubject,score);markStudiedToday();
+  if(pct>=90&&curLevel<3){curLevel++;stats[curSubject].level=curLevel;}
+  else if(pct<40&&curLevel>1){curLevel--;stats[curSubject].level=curLevel;}
+  const entry={subject:curSubject,level:curLevel,score,total,stars,date:new Date().toLocaleString('ko-KR')};
+  hist.unshift(entry);if(hist.length>30)hist=hist.slice(0,30);
+  checkBadges(score,total,pct);save();
+  const es=['😢','😊','😄','🎉'];const ms=['괜찮아요! 다시 해봐요 💪','잘 했어요! 조금 더!','훌륭해요!','완벽해요! 최고예요! 🏆'];
+  document.getElementById('rEmoji').textContent=es[stars];document.getElementById('rMsg').textContent=ms[stars];
+  document.getElementById('rScore').textContent=score+' / '+total;document.getElementById('rStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  let bonus='';if(bonusStars>0)bonus+='⚡ 빠른 정답 보너스 +'+bonusStars+'⭐  ';
+  document.getElementById('rBonus').textContent=bonus+'(총 +'+earnedNow+'⭐)';
+  document.getElementById('rDetail').textContent='맞힌 문제: '+score+'개 / 틀린 문제: '+(total-score)+'개 ('+pct+'%)';
+  const gbox=document.getElementById('gachaBox');
+  if(stars>=2){const sticker=STICKER_POOL[Math.floor(Math.random()*STICKER_POOL.length)];if(stickers.length<20)stickers.push(sticker);gbox.style.display='';gbox.innerHTML='<div style="font-size:.82rem;font-weight:700;color:#856404;margin-bottom:8px;">🎁 뽑기 보상!</div><div class="gacha-emoji">'+sticker+'</div><div class="gacha-name">새 스티커 획득! 🎉</div>';}
+  else gbox.style.display='none';
+  showScreen('resultScreen');if(stars>=2)confetti();if(stars===3)playLevelup();
+}
+
+// BADGES
+function checkBadges(score,total,pct){
+  const newBadges=[];const add=(id)=>{if(!earnedBadges.includes(id)){earnedBadges.push(id);newBadges.push(id);}};
+  if(stats[curSubject].t>=1)add('first');if(pct===100)add('perfect');if(streak>=3)add('streak3');if(streak>=7)add('streak7');
+  if(curSubject==='math'&&pct===100)add('math_master');if(curSubject==='english'&&stats.english.t>=10)add('english_star');
+  if(curSubject==='hanja'&&stats.hanja.t>=10)add('hanja_pro');if(MUSIC_SUBJS.includes(curSubject))add('music_lover');
+  if(stickers.length>=10)add('collector');const subjDone=Object.keys(stats).filter(k=>stats[k].t>0);if(subjDone.length>=6)add('allrounder');
+  const totalQ=Object.values(stats).reduce((a,s)=>a+s.t,0);if(totalQ>=100)add('hundred');if(totalStars>=50)add('star50');
+  if(newBadges.length>0)setTimeout(()=>showBadgePopup(newBadges[0]),1500);
+}
+function showBadgePopup(id){
+  const def=BADGE_DEFS.find(b=>b.id===id);if(!def)return;
+  const ov=document.createElement('div');ov.className='overlay';ov.onclick=()=>{ov.remove();popup.remove();};
+  const popup=document.createElement('div');popup.className='badge-popup';
+  popup.innerHTML='<div class="badge-emoji">'+def.emoji+'</div><div class="badge-title">배지 획득!</div><div class="badge-name">'+def.name+'</div><div class="badge-desc">'+def.desc+'</div><button class="btn btn-y btn-sm" id="badgeOkBtn">🎉 확인!</button>';
+  document.body.appendChild(ov);document.body.appendChild(popup);
+  document.getElementById('badgeOkBtn').onclick=function(){ov.remove();popup.remove();};
+  playLevelup();
+}
+function renderBadges(){
+  const bg=document.getElementById('badgeGrid');bg.innerHTML='';
+  BADGE_DEFS.forEach(b=>{const el=document.createElement('div');el.className='badge-card'+(earnedBadges.includes(b.id)?'':' locked');el.innerHTML='<div class="bc-emoji">'+b.emoji+'</div><div class="bc-name">'+b.name+'</div>';el.title=b.desc;bg.appendChild(el);});
+  const sg=document.getElementById('stickerGrid');sg.innerHTML='';
+  for(let i=0;i<20;i++){const el=document.createElement('div');if(stickers[i]){el.className='sticker-slot';el.textContent=stickers[i];}else{el.className='sticker-slot empty';el.textContent='?';}sg.appendChild(el);}
+}
+
+// PARENT
+function renderParent(){
+  let tq=0,tc=0;Object.values(stats).forEach(s=>{tq+=s.t;tc+=s.c;});
+  document.getElementById('pStars').textContent=totalStars;document.getElementById('pStreak').textContent=streak+'일';document.getElementById('pBadges').textContent=earnedBadges.length;document.getElementById('pRate').textContent=tq>0?Math.round(tc/tq*100)+'%':'-';
+  const pm=document.getElementById('pMission');pm.innerHTML='';
+  MISSIONS.forEach(m=>{
+    const prog=missionProgress[m.id]||0;const done=prog>=m.target;
+    const ic=done?'✅':m.icon;const col=done?'#2a7a2a':'#aaa';const rew=done?'완료!':m.reward;
+    pm.innerHTML+='<div style="background:#fff;border-radius:12px;padding:11px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);">'+
+      '<span style="font-size:1.2rem;">'+ic+'</span>'+
+      '<div style="flex:1"><div style="font-weight:700;font-size:.85rem;">'+m.label+'</div>'+
+      '<div style="font-size:.73rem;color:#aaa;">'+Math.min(prog,m.target)+' / '+m.target+'</div></div>'+
+      '<div style="font-size:.78rem;font-weight:700;color:'+col+';">'+rew+'</div></div>';
+  });
+  const lvLabels=['','🌱초급','🌿중급','🌳고급','⭐최고급'];
+  const wl=document.getElementById('pWeak');wl.innerHTML='';
+  ['math','money','korean','english','hanja','music_theory','piano','violin'].forEach(k=>{
+    const v=stats[k]||{c:0,t:0,level:1};const pct=v.t>0?Math.round(v.c/v.t*100):0;const col=pct>=80?'#6BCB77':pct>=50?'#FFD93D':'#FF6B6B';
+    wl.innerHTML+='<div class="witem"><span style="font-size:1.3rem;">'+ICONS[k]+'</span><div style="flex:1"><div style="font-weight:700;font-size:.83rem;display:flex;justify-content:space-between;"><span>'+NAMES[k]+'</span><span style="color:var(--purple);font-size:.7rem;">'+lvLabels[v.level||1]+'</span></div><div class="wbar"><div class="wfill" style="width:'+pct+'%;background:'+col+'"></div></div></div><div style="font-weight:900;font-size:.88rem;color:'+col+';min-width:42px;text-align:right;">'+(v.t>0?pct+'%':'미학습')+'</div></div>';
+  });
+  const hl=document.getElementById('pHist');
+  if(!hist.length){hl.innerHTML='<div style="color:#aaa;font-size:.83rem;padding:14px;">아직 학습 기록이 없어요.</div>';return;}
+  hl.innerHTML=hist.slice(0,12).map(h=>{const pct=Math.round(h.score/h.total*100);const cls=pct>=80?'sg':pct>=50?'so':'sp';return'<div class="hitem"><div style="font-size:1.5rem;">'+ICONS[h.subject]+'</div><div style="flex:1"><div style="font-weight:900;font-size:.86rem;">'+NAMES[h.subject]+' · Lv'+(h.level||1)+' · ⭐'+h.stars+'</div><div style="font-size:.7rem;color:#aaa;">'+h.date+'</div></div><div class="hscore '+cls+'">'+h.score+'/'+h.total+'<br><span style="font-size:.65rem;">'+pct+'%</span></div></div>';}).join('');
+}
+function saveNotify(){
+  const e=document.getElementById('nEmail').value,p=document.getElementById('nPhone').value;const log=document.getElementById('nLog');
+  if(!e&&!p){log.textContent='⚠️ 입력해주세요.';return;}
+  try{localStorage.setItem('ne',e);localStorage.setItem('np',p);}catch(ex){}
+  log.innerHTML='✅ 저장 완료!<br><small style="color:#bbb">실제 알림은 서버 연동 시</small>';
+}
+function confetti(){
+  const wrap=document.getElementById('cfWrap');wrap.innerHTML='';const cols=['#FFD93D','#6EC6F5','#6BCB77','#FF6B6B','#C77DFF'];
+  for(let i=0;i<60;i++){const p=document.createElement('div');p.className='cfp';p.style.cssText='left:'+Math.random()*100+'%;background:'+cols[Math.floor(Math.random()*cols.length)]+';animation-delay:'+Math.random()*1.5+'s;animation-duration:'+(2+Math.random())+'s;width:'+(7+Math.random()*9)+'px;height:'+(7+Math.random()*9)+'px;border-radius:'+(Math.random()>.5?'50%':'2px');wrap.appendChild(p);}
+  setTimeout(()=>wrap.innerHTML='',4500);
+}
+
+load();updateHomeUI();
+try{const ne=localStorage.getItem('ne'),np=localStorage.getItem('np');if(ne)document.getElementById('nEmail').value=ne;if(np)document.getElementById('nPhone').value=np;}catch(e){}
+</script>
+</body>
+</html>
