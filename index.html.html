@@ -22,6 +22,7 @@
 <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22%EB%B0%98%EC%A7%9D%EB%B0%98%EC%A7%9D%20%EA%B3%B5%EB%B6%80%EB%B0%A9%22,%22short_name%22:%22%EA%B3%B5%EB%B6%80%EB%B0%A9%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23FFF8F0%22,%22theme_color%22:%22%23C77DFF%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23C77DFF'/><text y='.9em' font-size='80' x='10'>🌟</text></svg>%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]}">
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hanzi-writer/3.5.0/hanzi-writer.min.js"></script>
 <style>
 :root{--sky:#6EC6F5;--sun:#FFD93D;--grass:#6BCB77;--coral:#FF6B6B;--purple:#C77DFF;--cream:#FFF8F0;--dark:#2D2D2D;--sh:0 8px 32px rgba(0,0,0,0.12);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -439,6 +440,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
   </div>
   <div class="sectitle">📅 오늘 미션 현황</div>
   <div id="pMission" style="width:100%;max-width:580px;padding:0 20px;margin-bottom:16px;"></div>
+  <div class="sectitle">📈 최근 7일 학습량</div>
+  <div id="pWeekGraph" style="width:100%;max-width:580px;padding:0 20px;margin-bottom:16px;"></div>
   <div class="sectitle">📊 과목별 수준 & 정답률</div>
   <div class="wlist" id="pWeak"></div>
   <div class="sectitle">📋 최근 학습 기록</div>
@@ -449,6 +452,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
     <input class="ninput" type="tel" id="nPhone" placeholder="전화번호"/>
     <button class="bnot" onclick="saveNotify()">💾 저장</button>
     <div id="nLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
+  </div></div>
+  <div class="notifysec"><div class="ncard">
+    <div style="font-weight:900;margin-bottom:10px;">💾 데이터 백업 / 복원</div>
+    <div style="font-size:.8rem;color:#888;margin-bottom:10px;">학습 기록을 파일로 저장하거나 불러올 수 있어요. 폰을 바꿔도 기록이 유지돼요!</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="bnot" style="background:var(--grass);" onclick="backupData()">⬇️ 백업 내보내기</button>
+      <button class="bnot" style="background:var(--sky);" onclick="document.getElementById('restoreFile').click()">⬆️ 복원하기</button>
+      <input type="file" id="restoreFile" accept=".json" style="display:none;" onchange="restoreData(event)"/>
+    </div>
+    <div id="backupLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
   </div></div>
 </div>
 
@@ -580,6 +593,59 @@ function playLevelup(){
   [523,587,659,698,784].forEach((f,i)=>setTimeout(()=>playTone(f,.15,'sine',.3),i*100));
 }
 
+// 계이름 → 주파수 (4옥타브 기준)
+const NOTE_FREQ={
+  '도':261.63,'도#':277.18,'레':293.66,'레#':311.13,'미':329.63,
+  '파':349.23,'파#':369.99,'솔':392.00,'솔#':415.30,'라':440.00,
+  '라#':466.16,'시':493.88,'도2':523.25,
+  'C':261.63,'Cs':277.18,'D':293.66,'Ds':311.13,'E':329.63,
+  'F':349.23,'Fs':369.99,'G':392.00,'Gs':415.30,'A':440.00,
+  'As':466.16,'B':493.88,'C2':523.25,
+};
+// 피아노 음색으로 한 음 재생
+function playNote(noteName, dur=0.6){
+  const freq=NOTE_FREQ[noteName];
+  if(!freq)return;
+  try{
+    const ctx=getAudio();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='triangle'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.35,ctx.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+// 바이올린 음색
+function playViolinNote(strName, dur=0.8){
+  const map={'G줄':196.00,'D줄':293.66,'A줄':440.00,'E줄':659.25};
+  const freq=map[strName];
+  if(!freq)return;
+  try{
+    const ctx=getAudio();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sawtooth'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.2,ctx.currentTime+0.05);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.start(); o.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+//  음성 읽어주기 (TTS)
+// ══════════════════════════════════════════
+function speak(text, lang='ko-KR'){
+  try{
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=lang; u.rate=0.85; u.pitch=1.1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
 // ══════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════
@@ -691,6 +757,15 @@ function showWrongNote() {
   if (!filtered.length) {
     list.innerHTML = '<div style="text-align:center;color:#aaa;padding:30px;">오답이 없어요! 🎉</div>';
   } else {
+    // 안내 + 비우기 버튼
+    const top=document.createElement('div');
+    top.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
+    top.innerHTML='<div style="font-size:.82rem;color:#888;">틀린 문제 '+filtered.length+'개 · 복습해봐요!</div>';
+    const clrBtn=document.createElement('button');
+    clrBtn.className='bclear';clrBtn.style.fontSize='.78rem';clrBtn.textContent='🗑️ 비우기';
+    clrBtn.onclick=()=>{ wrongNotes=wrongNotes.filter(n=>n.subject!==curSubject); try{localStorage.setItem('wn',JSON.stringify(wrongNotes));}catch(e){} showWrongNote(); };
+    top.appendChild(clrBtn);
+    list.appendChild(top);
     filtered.slice(0, 20).forEach(n => {
       const el = document.createElement('div');
       el.className = 'wrong-item';
@@ -760,10 +835,10 @@ function renderPianoKeyboard(correctNote, area, onSelect) {
     key.className = 'piano-key-white';
     key.id = 'pk_' + w.key;
     key.textContent = w.note;
-    if (w.note === correctNote || w.key === correctNote) key.classList.add('highlight');
     key.onclick = () => {
       document.querySelectorAll('.piano-key-white,.piano-key-black').forEach(k => k.classList.remove('selected'));
       key.classList.add('selected');
+      playNote(w.note==='도'&&w.key==='C2'?'도2':w.note);
       onSelect(w.note, w.key);
     };
     kb.appendChild(key);
@@ -783,6 +858,7 @@ function renderPianoKeyboard(correctNote, area, onSelect) {
     key.onclick = () => {
       document.querySelectorAll('.piano-key-white,.piano-key-black').forEach(k => k.classList.remove('selected'));
       key.classList.add('selected');
+      playNote(b.note);
       onSelect(b.note, b.key);
     };
     blackLayer.appendChild(key);
@@ -839,6 +915,7 @@ function renderViolinStrings(correctStr, area, onSelect) {
       document.querySelectorAll('.violin-string').forEach(v => v.classList.remove('selected'));
       el.classList.add('selected');
       selectedStr = s.name;
+      playViolinNote(s.name);
       onSelect(s.name);
     };
     row.appendChild(el);
@@ -1077,6 +1154,7 @@ const LEARN={
   ],
   hanja:[
     {icon:'字',title:'한자란?',content:'한자는 그림에서 시작했어요:<br><br>🌞 → <b>日</b>(해 일)<br>🌙 → <b>月</b>(달 월)<br>⛰️ → <b>山</b>(뫼 산)<br>💧 → <b>水</b>(물 수)'},
+    {icon:'✍️',title:'획순 따라쓰기',content:'한자는 <b>쓰는 순서(획순)</b>가 있어요!<br><br>아래 버튼을 눌러 획순을 보고 따라 써봐요.',strokeChars:['一','二','三','人','大','山','水','火','木','日','月']},
     {icon:'🌿',title:'자연 한자',content:'<b>山</b> — 산<br><b>水</b> — 물<br><b>火</b> — 불<br><b>木</b> — 나무'},
     {icon:'👨‍👩‍👧',title:'사람 한자',content:'<b>人</b> — 사람<br><b>父</b> — 아버지<br><b>母</b> — 어머니<br><b>子</b> — 아들·자녀'},
     {icon:'🔢',title:'숫자 한자',content:'<b>一</b>(일) <b>二</b>(이) <b>三</b>(삼)<br><b>四</b>(사) <b>五</b>(오) <b>六</b>(육)<br><b>七</b>(칠) <b>八</b>(팔) <b>九</b>(구) <b>十</b>(십)'},
@@ -1120,11 +1198,49 @@ function showLearn(subj){
 }
 function renderLearnPage(){
   const p=learnPages[learnPage];
-  document.getElementById('learnContent').innerHTML='<div class="learncard"><div class="learn-icon">'+p.icon+'</div><div class="learn-title">'+p.title+'</div><div class="learn-content">'+p.content+'</div></div>';
+  let html='<div class="learncard"><div class="learn-icon">'+p.icon+'</div><div class="learn-title">'+p.title+'</div><div class="learn-content">'+p.content+'</div>';
+  if(p.strokeChars){
+    html+='<div id="strokeArea" style="margin-top:16px;"></div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;" id="strokeBtns"></div>';
+  }
+  html+='</div>';
+  document.getElementById('learnContent').innerHTML=html;
   const dots=document.getElementById('learnDots');
   dots.innerHTML=learnPages.map((_,i)=>'<div class="ldot'+(i===learnPage?' on':'')+'" onclick="learnPage='+i+';renderLearnPage()"></div>').join('');
   document.getElementById('learnPrev').disabled=learnPage===0;
   document.getElementById('learnNext').textContent=learnPage===learnPages.length-1?'🎮 문제 풀기!':'다음 →';
+  // 한자 획순 애니메이션
+  if(p.strokeChars){
+    const btnWrap=document.getElementById('strokeBtns');
+    p.strokeChars.forEach(ch=>{
+      const b=document.createElement('button');
+      b.className='albtn';
+      b.style.cssText='font-size:1.3rem;width:48px;height:48px;';
+      b.textContent=ch;
+      b.onclick=()=>showStrokeOrder(ch);
+      btnWrap.appendChild(b);
+    });
+    showStrokeOrder(p.strokeChars[0]);
+  }
+}
+let hanziWriterInstance=null;
+function showStrokeOrder(char){
+  const area=document.getElementById('strokeArea');
+  if(!area||typeof HanziWriter==='undefined')return;
+  area.innerHTML='<div id="hanziTarget" style="display:flex;justify-content:center;"></div>'+
+    '<div style="text-align:center;margin-top:8px;"><button class="hintbtn" id="replayStroke" style="background:linear-gradient(135deg,#C77DFF,#9D4EDD);color:#fff;max-width:200px;">▶️ 다시 보기</button></div>';
+  try{
+    hanziWriterInstance=HanziWriter.create('hanziTarget',char,{
+      width:160,height:160,padding:5,
+      strokeColor:'#C77DFF',radicalColor:'#FF6B6B',
+      delayBetweenStrokes:400,strokeAnimationSpeed:1,
+      showOutline:true
+    });
+    hanziWriterInstance.animateCharacter();
+    document.getElementById('replayStroke').onclick=()=>hanziWriterInstance.animateCharacter();
+  }catch(e){
+    area.innerHTML='<div style="text-align:center;font-size:4rem;color:#C77DFF;padding:20px;">'+char+'</div>';
+  }
 }
 function learnNav(dir){
   const next=learnPage+dir;
@@ -1337,8 +1453,12 @@ function renderQ(){
 function renderDictation(q,area){
   const card=document.createElement('div');card.className='dictcard';
   const wd=document.createElement('div');wd.className='dictword';wd.id='dWord';wd.textContent=q.answer;
-  const lb=document.createElement('div');lb.style.cssText='font-size:.8rem;color:#5a8a5a;font-weight:700;';lb.textContent='👀 잘 보고 기억하세요!';
+  const lb=document.createElement('div');lb.style.cssText='font-size:.8rem;color:#5a8a5a;font-weight:700;';lb.textContent='👀 잘 보고 들어보세요!';
   card.appendChild(wd);card.appendChild(lb);area.appendChild(card);
+  // 단어 음성으로 읽어주기
+  setTimeout(()=>speak(q.answer),500);
+  // 다시 듣기 버튼
+  const listenBtn=document.createElement('button');listenBtn.className='hintbtn';listenBtn.style.background='linear-gradient(135deg,#6EC6F5,#4A9FD8)';listenBtn.style.color='#fff';listenBtn.textContent='🔊 다시 듣기';listenBtn.onclick=()=>speak(q.answer);area.appendChild(listenBtn);
   const hb=document.createElement('button');hb.className='hintbtn';hb.id='hintBtn';hb.textContent='💡 힌트 보기';hb.onclick=()=>doHint(q);area.appendChild(hb);
   const ha=document.createElement('div');ha.id='hintArea';area.appendChild(ha);
   typedAns='';
@@ -1350,7 +1470,7 @@ function renderDictation(q,area){
   const cl=document.createElement('button');cl.className='bclear';cl.textContent='⌫ 지우기';cl.onclick=()=>{const i=document.getElementById('kInp');if(i){i.value='';typedAns='';}};
   const su=document.createElement('button');su.className='bsub';su.textContent='✅ 확인!';su.onclick=()=>{if(typedAns.trim())checkAns(typedAns.trim(),q.answer,null,true);};
   row.appendChild(cl);row.appendChild(su);area.appendChild(row);
-  setTimeout(()=>{const w=document.getElementById('dWord');if(w){w.textContent='???';w.style.color='#ccc';lb.textContent='💭 기억나나요?';}},4000);
+  setTimeout(()=>{const w=document.getElementById('dWord');if(w){w.textContent='🔊';w.style.color='#6EC6F5';lb.textContent='💭 듣고 써보세요! (다시 듣기 가능)';}},4000);
   setTimeout(()=>inp.focus(),4200);
 }
 function doHint(q){
@@ -1488,7 +1608,7 @@ function showResult(){
   updateMissionProgress(curSubject,score);markStudiedToday();
   if(pct>=90&&curLevel<3){curLevel++;stats[curSubject].level=curLevel;}
   else if(pct<40&&curLevel>1){curLevel--;stats[curSubject].level=curLevel;}
-  const entry={subject:curSubject,level:curLevel,score,total,stars,date:new Date().toLocaleString('ko-KR')};
+  const entry={subject:curSubject,level:curLevel,score,total,stars,date:new Date().toLocaleString('ko-KR'),dayKey:new Date().toISOString().slice(0,10),duration:getStudyDuration()};
   hist.unshift(entry);if(hist.length>30)hist=hist.slice(0,30);
   checkBadges(score,total,pct);save();
   const es=['😢','😊','😄','🎉'];const ms=['괜찮아요! 다시 해봐요 💪','잘 했어요! 조금 더!','훌륭해요!','완벽해요! 최고예요! 🏆'];
@@ -1560,8 +1680,78 @@ function renderParent(){
     wl.innerHTML+='<div class="witem"><span style="font-size:1.3rem;">'+ICONS[k]+'</span><div style="flex:1"><div style="font-weight:700;font-size:.83rem;display:flex;justify-content:space-between;"><span>'+NAMES[k]+'</span><span style="color:var(--purple);font-size:.7rem;">'+lvLabels[v.level||1]+'</span></div><div class="wbar"><div class="wfill" style="width:'+pct+'%;background:'+col+'"></div></div></div><div style="font-weight:900;font-size:.88rem;color:'+col+';min-width:42px;text-align:right;">'+(v.t>0?pct+'%':'미학습')+'</div></div>';
   });
   const hl=document.getElementById('pHist');
-  if(!hist.length){hl.innerHTML='<div style="color:#aaa;font-size:.83rem;padding:14px;">아직 학습 기록이 없어요.</div>';return;}
-  hl.innerHTML=hist.slice(0,12).map(h=>{const pct=Math.round(h.score/h.total*100);const cls=pct>=80?'sg':pct>=50?'so':'sp';return'<div class="hitem"><div style="font-size:1.5rem;">'+ICONS[h.subject]+'</div><div style="flex:1"><div style="font-weight:900;font-size:.86rem;">'+NAMES[h.subject]+' · Lv'+(h.level||1)+' · ⭐'+h.stars+'</div><div style="font-size:.7rem;color:#aaa;">'+h.date+'</div></div><div class="hscore '+cls+'">'+h.score+'/'+h.total+'<br><span style="font-size:.65rem;">'+pct+'%</span></div></div>';}).join('');
+  if(!hist.length){hl.innerHTML='<div style="color:#aaa;font-size:.83rem;padding:14px;">아직 학습 기록이 없어요.</div>';}
+  else {hl.innerHTML=hist.slice(0,12).map(h=>{const pct=Math.round(h.score/h.total*100);const cls=pct>=80?'sg':pct>=50?'so':'sp';return'<div class="hitem"><div style="font-size:1.5rem;">'+ICONS[h.subject]+'</div><div style="flex:1"><div style="font-weight:900;font-size:.86rem;">'+NAMES[h.subject]+' · Lv'+(h.level||1)+' · ⭐'+h.stars+'</div><div style="font-size:.7rem;color:#aaa;">'+h.date+'</div></div><div class="hscore '+cls+'">'+h.score+'/'+h.total+'<br><span style="font-size:.65rem;">'+pct+'%</span></div></div>';}).join('');}
+  renderWeekGraph();
+}
+
+// 주간 학습량 그래프
+function renderWeekGraph(){
+  const wg=document.getElementById('pWeekGraph');
+  if(!wg)return;
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(Date.now()-i*864e5);
+    const key=d.toISOString().slice(0,10);
+    const label=['일','월','화','수','목','금','토'][d.getDay()];
+    const count=hist.filter(h=>h.dayKey===key).reduce((a,h)=>a+h.total,0);
+    days.push({label,count,isToday:i===0});
+  }
+  const maxCount=Math.max(...days.map(d=>d.count),1);
+  let html='<div style="background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.06);"><div style="display:flex;align-items:flex-end;justify-content:space-between;height:120px;gap:6px;">';
+  days.forEach(d=>{
+    const h=Math.max(d.count/maxCount*100,4);
+    const col=d.isToday?'linear-gradient(180deg,#C77DFF,#9D4EDD)':'linear-gradient(180deg,#6EC6F5,#4A9FD8)';
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;">'+
+      '<div style="font-size:.7rem;font-weight:700;color:#888;">'+(d.count||'')+'</div>'+
+      '<div style="width:100%;height:'+h+'%;background:'+col+';border-radius:6px 6px 0 0;transition:height .5s;min-height:4px;"></div>'+
+      '<div style="font-size:.72rem;font-weight:700;color:'+(d.isToday?'#C77DFF':'#aaa')+';">'+d.label+'</div></div>';
+  });
+  html+='</div><div style="text-align:center;font-size:.75rem;color:#aaa;margin-top:8px;">최근 7일간 푼 문제 수</div></div>';
+  wg.innerHTML=html;
+}
+
+// 데이터 백업
+function backupData(){
+  const data={};
+  ['sh','ss','eb','st','ts','streak','lsd','wn'].forEach(k=>{
+    const v=localStorage.getItem(k);
+    if(v!==null)data[k]=v;
+  });
+  // 미션 데이터도 백업
+  Object.keys(localStorage).forEach(k=>{if(k.startsWith('mp_'))data[k]=localStorage.getItem(k);});
+  data._backup_date=new Date().toLocaleString('ko-KR');
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='반짝반짝공부방_백업_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  const log=document.getElementById('backupLog');
+  if(log)log.innerHTML='✅ 백업 파일이 저장됐어요!';
+}
+
+// 데이터 복원
+function restoreData(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      Object.keys(data).forEach(k=>{
+        if(k!=='_backup_date')localStorage.setItem(k,data[k]);
+      });
+      const log=document.getElementById('backupLog');
+      if(log)log.innerHTML='✅ 복원 완료! 새로고침합니다...';
+      setTimeout(()=>location.reload(),1000);
+    }catch(err){
+      const log=document.getElementById('backupLog');
+      if(log)log.innerHTML='❌ 파일을 읽을 수 없어요.';
+    }
+  };
+  reader.readAsText(file);
 }
 function saveNotify(){
   const e=document.getElementById('nEmail').value,p=document.getElementById('nPhone').value;const log=document.getElementById('nLog');
