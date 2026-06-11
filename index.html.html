@@ -243,6 +243,44 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
 #practiceScreen{background:linear-gradient(180deg,#e8fde8,#fff9f0);padding-bottom:30px;}
 
 @media(min-width:600px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+
+/* 피아노 건반 UI */
+.piano-keyboard{display:flex;position:relative;height:110px;width:100%;max-width:500px;margin:10px 0;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+.piano-key-white{flex:1;background:#fff;border:1px solid #ccc;border-radius:0 0 6px 6px;cursor:pointer;transition:background .1s;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:.65rem;font-weight:700;color:#888;}
+.piano-key-white:hover,.piano-key-white.highlight{background:#fff9c4;}
+.piano-key-white.selected{background:#6EC6F5;color:#fff;}
+.piano-key-white.correct-key{background:#6BCB77!important;color:#fff!important;}
+.piano-key-white.wrong-key{background:#FF6B6B!important;color:#fff!important;}
+.piano-blacks{position:absolute;top:0;left:0;width:100%;height:65%;display:flex;pointer-events:none;}
+.piano-key-black{background:#222;border-radius:0 0 4px 4px;cursor:pointer;pointer-events:all;transition:background .1s;position:absolute;width:8%;height:100%;z-index:2;}
+.piano-key-black:hover,.piano-key-black.highlight{background:#555;}
+.piano-key-black.selected{background:#C77DFF;}
+.piano-key-black.correct-key{background:#6BCB77!important;}
+.piano-key-black.wrong-key{background:#FF6B6B!important;}
+
+/* 바이올린 줄 UI */
+.violin-strings{display:flex;gap:16px;justify-content:center;padding:16px;background:#f5f0e8;border-radius:16px;margin:10px 0;width:100%;}
+.violin-string{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border-radius:12px;border:3px solid transparent;transition:all .15s;}
+.violin-string:hover{background:#fff3e0;border-color:#FF9F43;}
+.violin-string.selected{background:#ffe0b2;border-color:#FF9F43;}
+.violin-string.correct-str{background:#e8fde8!important;border-color:#6BCB77!important;}
+.violin-string.wrong-str{background:#ffe8e8!important;border-color:#FF6B6B!important;}
+.vstring-line{width:4px;height:60px;border-radius:2px;}
+.vstring-name{font-size:1.1rem;font-weight:900;color:var(--dark);}
+.vstring-note{font-size:.75rem;color:#888;}
+
+/* 오답 설명 박스 */
+.explain-box{background:linear-gradient(135deg,#e8f4ff,#f0e8ff);border:2px solid #6EC6F5;border-radius:14px;padding:14px;width:100%;font-size:.9rem;color:var(--dark);line-height:1.7;animation:popIn .3s;margin-top:8px;}
+.explain-box b{color:var(--purple);}
+
+/* 오답노트 아이템 */
+.wrong-item{background:#fff;border-radius:16px;padding:16px;box-shadow:0 3px 12px rgba(0,0,0,.08);border-left:4px solid var(--coral);}
+.wrong-item-q{font-size:.92rem;font-weight:700;color:var(--dark);margin-bottom:6px;}
+.wrong-item-a{display:flex;gap:8px;font-size:.85rem;margin-bottom:4px;}
+.wrong-item-explain{font-size:.82rem;color:#666;margin-top:6px;line-height:1.6;}
+
+/* 학습 시간 */
+.study-time-badge{background:rgba(255,255,255,.15);border-radius:12px;padding:4px 10px;font-size:.75rem;color:#fff;margin-top:4px;}
 </style>
 </head>
 <body>
@@ -352,6 +390,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
   <div class="aarea" id="aArea"></div>
 </div>
 
+<!-- WRONG NOTE -->
+<div id="wrongNoteScreen" class="screen">
+  <div class="phdr">
+    <button class="bbtn" onclick="goBack()">←</button>
+    <div class="ptitle">📝 오답 노트</div>
+  </div>
+  <div id="wrongNoteList" style="width:100%;max-width:540px;padding:0 20px 30px;display:flex;flex-direction:column;gap:12px;"></div>
+</div>
+
 <!-- RESULT -->
 <div id="resultScreen" class="screen">
   <div class="rcard">
@@ -365,6 +412,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
     <div class="rbtns">
       <button class="btn btn-y" onclick="startQuiz()" style="font-size:1rem;padding:13px;">🔄 다시 풀기</button>
       <button class="btn btn-g btn-sm" onclick="goLearn()">📖 배우기로 가기</button>
+      <button class="btn btn-r btn-sm" onclick="showWrongNote()" id="wrongNoteBtn" style="display:none;">📝 오답 노트 보기</button>
       <button class="bsec" onclick="goBack()">📚 다른 과목 선택</button>
     </div>
   </div>
@@ -615,6 +663,200 @@ function updateMissionProgress(subj, questionsAnswered){
   missionProgress[mid]=(missionProgress[mid]||0)+questionsAnswered;
 }
 
+
+// ══════════════════════════════════════════
+//  오답 노트
+// ══════════════════════════════════════════
+let wrongNotes = [];
+try { wrongNotes = JSON.parse(localStorage.getItem('wn') || '[]'); } catch(e) {}
+
+function addWrongNote(q, chosen) {
+  const note = {
+    subject: curSubject,
+    question: q.question || q.q || '',
+    correct: q.answer,
+    chosen: chosen,
+    explain: q.explain || '',
+    date: new Date().toLocaleDateString('ko-KR')
+  };
+  wrongNotes.unshift(note);
+  if (wrongNotes.length > 50) wrongNotes = wrongNotes.slice(0, 50);
+  try { localStorage.setItem('wn', JSON.stringify(wrongNotes)); } catch(e) {}
+}
+
+function showWrongNote() {
+  const list = document.getElementById('wrongNoteList');
+  list.innerHTML = '';
+  const filtered = wrongNotes.filter(n => n.subject === curSubject);
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;color:#aaa;padding:30px;">오답이 없어요! 🎉</div>';
+  } else {
+    filtered.slice(0, 20).forEach(n => {
+      const el = document.createElement('div');
+      el.className = 'wrong-item';
+      el.innerHTML = '<div class="wrong-item-q">❓ ' + n.question + '</div>' +
+        '<div class="wrong-item-a"><span style="color:#FF6B6B">내 답: ' + n.chosen + '</span></div>' +
+        '<div class="wrong-item-a"><span style="color:#6BCB77">정답: ' + n.correct + '</span></div>' +
+        (n.explain ? '<div class="wrong-item-explain">💡 ' + n.explain + '</div>' : '') +
+        '<div style="font-size:.72rem;color:#ccc;margin-top:4px;">' + n.date + '</div>';
+      list.appendChild(el);
+    });
+  }
+  showScreen('wrongNoteScreen');
+}
+
+// ══════════════════════════════════════════
+//  학습 시간 기록
+// ══════════════════════════════════════════
+let studyStartTime = null;
+
+function startStudyTimer() {
+  studyStartTime = Date.now();
+}
+function getStudyDuration() {
+  if (!studyStartTime) return 0;
+  return Math.round((Date.now() - studyStartTime) / 1000);
+}
+
+// ══════════════════════════════════════════
+//  피아노 건반 UI
+// ══════════════════════════════════════════
+function renderPianoKeyboard(correctNote, area, onSelect) {
+  // 흰 건반: 도레미파솔라시도 (C D E F G A B C)
+  const whites = [
+    {note:'도', key:'C', pos:0},
+    {note:'레', key:'D', pos:1},
+    {note:'미', key:'E', pos:2},
+    {note:'파', key:'F', pos:3},
+    {note:'솔', key:'G', pos:4},
+    {note:'라', key:'A', pos:5},
+    {note:'시', key:'B', pos:6},
+    {note:'도', key:'C2', pos:7},
+  ];
+  // 검은 건반 위치 (흰건반 사이, %)
+  const blacks = [
+    {note:'도#', key:'Cs', left:'10.5%'},
+    {note:'레#', key:'Ds', left:'23%'},
+    {note:'파#', key:'Fs', left:'48%'},
+    {note:'솔#', key:'Gs', left:'60.5%'},
+    {note:'라#', key:'As', left:'73%'},
+  ];
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:100%;max-width:500px;';
+
+  const label = document.createElement('div');
+  label.style.cssText = 'font-size:.88rem;font-weight:700;color:#555;margin-bottom:8px;text-align:center;';
+  label.textContent = '건반을 눌러 정답을 선택하세요!';
+  wrap.appendChild(label);
+
+  const kb = document.createElement('div');
+  kb.className = 'piano-keyboard';
+  kb.style.cssText = 'position:relative;height:110px;display:flex;';
+
+  // 흰 건반 먼저
+  whites.forEach(w => {
+    const key = document.createElement('div');
+    key.className = 'piano-key-white';
+    key.id = 'pk_' + w.key;
+    key.textContent = w.note;
+    if (w.note === correctNote || w.key === correctNote) key.classList.add('highlight');
+    key.onclick = () => {
+      document.querySelectorAll('.piano-key-white,.piano-key-black').forEach(k => k.classList.remove('selected'));
+      key.classList.add('selected');
+      onSelect(w.note, w.key);
+    };
+    kb.appendChild(key);
+  });
+
+  // 검은 건반 오버레이
+  const blackLayer = document.createElement('div');
+  blackLayer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:65%;pointer-events:none;';
+  blacks.forEach(b => {
+    const key = document.createElement('div');
+    key.className = 'piano-key-black';
+    key.id = 'pk_' + b.key;
+    key.style.left = b.left;
+    key.style.width = '8%';
+    key.style.pointerEvents = 'all';
+    key.title = b.note;
+    key.onclick = () => {
+      document.querySelectorAll('.piano-key-white,.piano-key-black').forEach(k => k.classList.remove('selected'));
+      key.classList.add('selected');
+      onSelect(b.note, b.key);
+    };
+    blackLayer.appendChild(key);
+  });
+  kb.appendChild(blackLayer);
+  wrap.appendChild(kb);
+
+  // 확인 버튼
+  const row = document.createElement('div');
+  row.className = 'srow';
+  row.style.marginTop = '8px';
+  const sub = document.createElement('button');
+  sub.className = 'bsub';
+  sub.textContent = '✅ 확인!';
+  sub.id = 'pianoSubmit';
+  sub.disabled = true;
+  row.appendChild(sub);
+  wrap.appendChild(row);
+
+  area.appendChild(wrap);
+  return sub;
+}
+
+// ══════════════════════════════════════════
+//  바이올린 줄 UI
+// ══════════════════════════════════════════
+function renderViolinStrings(correctStr, area, onSelect) {
+  const strings = [
+    {name:'G줄', note:'솔', color:'#8B4513', thick:6},
+    {name:'D줄', note:'레', color:'#CD853F', thick:4},
+    {name:'A줄', note:'라', color:'#DAA520', thick:3},
+    {name:'E줄', note:'미', color:'#C0C0C0', thick:2},
+  ];
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:100%;max-width:500px;';
+
+  const label = document.createElement('div');
+  label.style.cssText = 'font-size:.88rem;font-weight:700;color:#555;margin-bottom:8px;text-align:center;';
+  label.textContent = '줄을 선택하세요!';
+  wrap.appendChild(label);
+
+  const row = document.createElement('div');
+  row.className = 'violin-strings';
+
+  let selectedStr = null;
+  strings.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'violin-string';
+    el.innerHTML = '<div class="vstring-line" style="background:' + s.color + ';width:' + s.thick + 'px;"></div>' +
+      '<div class="vstring-name">' + s.name + '</div>' +
+      '<div class="vstring-note">' + s.note + '</div>';
+    el.onclick = () => {
+      document.querySelectorAll('.violin-string').forEach(v => v.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedStr = s.name;
+      onSelect(s.name);
+    };
+    row.appendChild(el);
+  });
+  wrap.appendChild(row);
+
+  const sub = document.createElement('button');
+  sub.className = 'bsub';
+  sub.textContent = '✅ 확인!';
+  sub.id = 'violinSubmit';
+  sub.disabled = true;
+  sub.style.marginTop = '8px';
+  wrap.appendChild(sub);
+
+  area.appendChild(wrap);
+  return sub;
+}
+
 // ══════════════════════════════════════════
 //  PICK SUBJECT
 // ══════════════════════════════════════════
@@ -689,12 +931,12 @@ const LT={
     {big:'4/4박자 한 마디는 몇 박?',answer:'4박',choices:['2박','3박','4박','8박'],hint:'분자가 박자 수예요',level:2},
   ],
   piano:[
-    {big:'피아노 "도"는?',answer:'검은 건반 2개 묶음 왼쪽',choices:['검은 건반 2개 묶음 왼쪽','검은 건반 3개 묶음 왼쪽','흰 건반 맨 왼쪽','중간 흰 건반'],hint:'검은 건반 2개 묶음을 찾아봐요',level:1},
+    {big:'피아노 건반에서 "도"는 어디?',answer:'도',type:'piano_key',hint:'검은 건반 2개 묶음을 찾아봐요',level:1},
     {big:'올바른 손 모양은?',answer:'달걀을 쥔 것처럼 둥글게',choices:['손가락을 쭉 펴서','달걀을 쥔 것처럼 둥글게','주먹처럼 꽉','손목을 꺾어서'],hint:'달걀 손 모양!',level:2},
   ],
   violin:[
-    {big:'바이올린 4줄 순서 (낮→높)는?',answer:'G-D-A-E',choices:['G-D-A-E','A-D-G-E','E-A-D-G','D-G-A-E'],hint:'낮은 G줄부터 높은 E줄',level:1},
-    {big:'튜닝 기준음 줄은?',answer:'A줄',choices:['G줄','D줄','A줄','E줄'],hint:'국제 표준음 440Hz',level:2},
+    {big:'튜닝 기준음 줄은?',answer:'A줄',type:'violin_str',hint:'국제 표준음 440Hz',level:1},
+    {big:'활 긋기 각도는?',answer:'직각(90도)',choices:['45도','60도','직각(90도)','아무거나'],hint:'줄에 수직으로!',level:2},
   ],
 };
 
@@ -718,6 +960,54 @@ function renderLT(idx){
     '<div class="ltbig">'+q.big+'</div>'+
     '<div class="lthint">💡 '+q.hint+'</div>';
   el.appendChild(card);
+
+  // 피아노 건반 UI (피아노 과목 + 건반 관련 문제)
+  if(curSubject==='piano' && q.type==='piano_key'){
+    let selectedNote=null;
+    const sub=renderPianoKeyboard(q.answer, el, (noteName)=>{
+      selectedNote=noteName;
+      sub.disabled=false;
+    });
+    sub.onclick=()=>{
+      if(!selectedNote)return;
+      const ok=selectedNote===q.answer;
+      // 건반 색상 표시
+      document.querySelectorAll('.piano-key-white,.piano-key-black').forEach(k=>{
+        if(k.textContent===q.answer||k.title===q.answer) k.classList.add('correct-key');
+        if(!ok&&(k.textContent===selectedNote||k.title===selectedNote)&&selectedNote!==q.answer) k.classList.add('wrong-key');
+      });
+      sub.disabled=true;
+      ltAnswers.push({level:q.level,correct:ok});
+      if(ok)playCorrect();else playWrong();
+      setTimeout(()=>renderLT(idx+1),1200);
+    };
+    return;
+  }
+
+  // 바이올린 줄 UI
+  if(curSubject==='violin' && q.type==='violin_str'){
+    let selectedStr=null;
+    const sub=renderViolinStrings(q.answer, el, (strName)=>{
+      selectedStr=strName;
+      sub.disabled=false;
+    });
+    sub.onclick=()=>{
+      if(!selectedStr)return;
+      const ok=selectedStr===q.answer;
+      document.querySelectorAll('.violin-string').forEach(v=>{
+        const name=v.querySelector('.vstring-name');
+        if(name&&name.textContent===q.answer) v.classList.add('correct-str');
+        if(!ok&&name&&name.textContent===selectedStr&&selectedStr!==q.answer) v.classList.add('wrong-str');
+      });
+      sub.disabled=true;
+      ltAnswers.push({level:q.level,correct:ok});
+      if(ok)playCorrect();else playWrong();
+      setTimeout(()=>renderLT(idx+1),1200);
+    };
+    return;
+  }
+
+  // 일반 객관식
   const grid=document.createElement('div'); grid.className='ltchoices';
   q.choices.forEach(ch=>{
     const btn=document.createElement('button'); btn.className='ltbtn';
@@ -850,6 +1140,7 @@ function startQuiz(){
   curQ=0; score=0; typedAns=''; hintLv=0; bonusStars=0;
   questions=genQuestions(curSubject,curLevel);
   const lvL=['','🌱초급','🌿중급','🌳고급','⭐최고급'];
+  startStudyTimer();
   document.getElementById('qBadge').textContent=NAMES[curSubject];
   document.getElementById('qBadge').style.background=COLORS[curSubject]||'#6BCB77';
   document.getElementById('qLevel').textContent=lvL[curLevel]||'';
@@ -956,7 +1247,7 @@ function genHanja(lv){
   });
 }
 const MUSIC_THEORY_QS=[
-  {q:'♩ 이 음표의 이름은?',a:'4분음표',ch:['온음표','2분음표','4분음표','8분음표'],hint:'가장 기본 음표예요'},
+  {q:'♩ 이 음표의 이름은?',a:'4분음표',ch:['온음표','2분음표','4분음표','8분음표'],hint:'가장 기본 음표예요',explain:'♩ 4분음표는 1박이에요. 가장 기본이 되는 음표예요!'},
   {q:'온음표는 몇 박?',a:'4박',ch:['1박','2박','4박','8박'],hint:'가장 긴 음표예요'},
   {q:'"솔"은 음계에서 몇 번째?',a:'5번째',ch:['4번째','5번째','6번째','7번째'],hint:'도레미파솔...'},
   {q:'4/4박자 한 마디는 몇 박?',a:'4박',ch:['2박','3박','4박','6박'],hint:'분자가 박자 수예요'},
@@ -972,28 +1263,42 @@ const MUSIC_THEORY_QS=[
   {q:'♪ 이 음표의 이름은?',a:'8분음표',ch:['온음표','4분음표','8분음표','16분음표'],hint:'4분음표의 절반이에요'},
 ];
 const PIANO_QS=[
-  {q:'피아노 "도"는 어디?',a:'검은 건반 2개 묶음 왼쪽',ch:['검은 건반 2개 묶음 왼쪽','검은 건반 3개 묶음 왼쪽','흰 건반 맨 왼쪽','중간 흰 건반'],hint:'검은 건반 2개 묶음을 찾아봐요'},
-  {q:'올바른 손 모양은?',a:'달걀을 쥔 것처럼 둥글게',ch:['손가락을 쭉 펴서','달걀을 쥔 것처럼 둥글게','주먹처럼 꽉','손목을 꺾어서'],hint:'달걀 손 모양!'},
-  {q:'피아노 엄지손가락 번호는?',a:'1번',ch:['1번','2번','3번','5번'],hint:'엄지-검지-중지-약지-소지'},
-  {q:'앉는 자세: 팔꿈치 높이는?',a:'건반과 같은 높이',ch:['건반보다 높게','건반보다 낮게','건반과 같은 높이','어깨 높이'],hint:'자연스러운 자세'},
-  {q:'C장조에서 미 다음 운지법은?',a:'엄지를 파 아래로 넘겨요',ch:['그냥 약지(4)로','엄지(1)를 파 아래로 넘겨요','손 전체 이동','검지(2)로 파'],hint:'thumb under!'},
-  {q:'하농의 목적은?',a:'손가락 독립 훈련',ch:['빠르기 훈련','손가락 독립 훈련','악보 읽기','리듬 훈련'],hint:'각 손가락을 독립적으로!'},
-  {q:'스케일 연습 순서는?',a:'오른손 → 왼손 → 양손',ch:['양손 먼저','오른손 → 왼손 → 양손','왼손 → 양손','양손만'],hint:'한 손씩 먼저!'},
-  {q:'나비야 첫 음은?',a:'도',ch:['도','레','미','솔'],hint:'나-비-야 나-비-야'},
+  {q:'"도"는 건반에서 어디일까요?',a:'도',type:'piano_key',hint:'검은 건반 2개 묶음 왼쪽 흰 건반이에요',explain:'도(C)는 검은 건반 2개 묶음의 바로 왼쪽 흰 건반이에요!'},
+  {q:'"미"는 건반에서 어디일까요?',a:'미',type:'piano_key',hint:'검은 건반 2개 묶음 오른쪽 끝 흰 건반',explain:'미(E)는 검은 건반 2개 묶음의 오른쪽 끝 흰 건반이에요!'},
+  {q:'"파"는 건반에서 어디일까요?',a:'파',type:'piano_key',hint:'검은 건반 3개 묶음 왼쪽 흰 건반',explain:'파(F)는 검은 건반 3개 묶음의 바로 왼쪽 흰 건반이에요!'},
+  {q:'"솔"은 건반에서 어디일까요?',a:'솔',type:'piano_key',hint:'파 오른쪽 흰 건반',explain:'솔(G)은 파 바로 오른쪽 흰 건반이에요!'},
+  {q:'올바른 손 모양은?',a:'달걀을 쥔 것처럼 둥글게',ch:['손가락을 쭉 펴서','달걀을 쥔 것처럼 둥글게','주먹처럼 꽉','손목을 꺾어서'],hint:'달걀 손 모양!',explain:'달걀을 살짝 쥔 것처럼 손가락을 둥글게 유지해야 해요!'},
+  {q:'피아노 엄지손가락 번호는?',a:'1번',ch:['1번','2번','3번','5번'],hint:'엄지-검지-중지-약지-소지',explain:'엄지(1)-검지(2)-중지(3)-약지(4)-소지(5) 순서예요!'},
+  {q:'앉는 자세: 팔꿈치 높이는?',a:'건반과 같은 높이',ch:['건반보다 높게','건반보다 낮게','건반과 같은 높이','어깨 높이'],hint:'자연스러운 자세',explain:'팔꿈치가 건반과 같은 높이여야 자연스럽게 연주할 수 있어요!'},
+  {q:'C장조에서 미 다음 운지법은?',a:'엄지를 파 아래로 넘겨요',ch:['그냥 약지(4)로','엄지(1)를 파 아래로 넘겨요','손 전체 이동','검지(2)로 파'],hint:'thumb under!',explain:'미(3번)를 치고 엄지를 파 아래로 넘기는 것을 thumb under라고 해요!'},
+  {q:'하농의 목적은?',a:'손가락 독립 훈련',ch:['빠르기 훈련','손가락 독립 훈련','악보 읽기','리듬 훈련'],hint:'각 손가락을 독립적으로!',explain:'하농은 각 손가락이 독립적으로 움직이도록 훈련하는 연습곡이에요!'},
+  {q:'나비야 첫 음은?',a:'도',ch:['도','레','미','솔'],hint:'나-비-야 나-비-야',explain:'나비야의 첫 음은 "도"예요! 도도솔솔 라라솔~'},
 ];
 const VIOLIN_QS=[
-  {q:'바이올린 4줄 순서 (낮→높)는?',a:'G-D-A-E',ch:['G-D-A-E','A-D-G-E','E-A-D-G','D-G-A-E'],hint:'낮은 G줄부터 높은 E줄'},
-  {q:'활을 쥘 때 엄지는?',a:'활대 아래에 구부려',ch:['활대 위에 펴서','활대 아래에 구부려','꽉 쥐어서','손바닥 전체로'],hint:'엄지는 구부려서 아래에'},
-  {q:'튜닝 기준음 줄은?',a:'A줄',ch:['G줄','D줄','A줄','E줄'],hint:'국제 표준음 440Hz'},
-  {q:'활 긋기 각도는?',a:'직각(90도)',ch:['45도','60도','직각(90도)','아무거나'],hint:'줄에 수직으로!'},
-  {q:'바이올린을 어디에 끼워요?',a:'어깨와 턱 사이',ch:['어깨 위','턱 아래만','어깨와 턱 사이','왼쪽 팔 아래'],hint:'숄더레스트가 도움돼요'},
-  {q:'다운보우는?',a:'활을 밀어서',ch:['활을 당겨서','활을 밀어서','활을 들어서','활을 내려서'],hint:'활 끝에서 뿌리 쪽으로'},
-  {q:'왼손 손가락 번호 0번은?',a:'빈 줄',ch:['엄지','빈 줄','검지','소지'],hint:'0 = 오픈 스트링'},
-  {q:'D장조 첫 음은?',a:'레(D)',ch:['도(C)','레(D)','미(E)','솔(G)'],hint:'D장조의 D = 레'},
+  {q:'튜닝 기준음은 어느 줄일까요?',a:'A줄',type:'violin_str',hint:'국제 표준음 440Hz',explain:'A줄(라)이 기준음 440Hz예요. 튜닝할 때 A줄부터 맞춰요!'},
+  {q:'가장 낮은 음을 내는 줄은?',a:'G줄',type:'violin_str',hint:'가장 굵은 줄이에요',explain:'G줄이 가장 낮고 굵어요. G-D-A-E 순서로 낮은 음부터 높은 음!'},
+  {q:'가장 높은 음을 내는 줄은?',a:'E줄',type:'violin_str',hint:'가장 가는 줄이에요',explain:'E줄이 가장 높고 가늘어요. 멜로디를 주로 E줄에서 연주해요!'},
+  {q:'반짝반짝 작은 별을 연주하는 줄은?',a:'A줄',type:'violin_str',hint:'라라미미파파미 첫 음이 라(A)예요',explain:'반짝반짝의 첫 음 "라"는 A줄 빈 줄(0번)이에요!'},
+  {q:'바이올린 4줄 순서 (낮→높)는?',a:'G-D-A-E',ch:['G-D-A-E','A-D-G-E','E-A-D-G','D-G-A-E'],hint:'낮은 G줄부터 높은 E줄',explain:'낮은 음부터 G(솔)-D(레)-A(라)-E(미) 순서예요!'},
+  {q:'활을 쥘 때 엄지는?',a:'활대 아래에 구부려',ch:['활대 위에 펴서','활대 아래에 구부려','꽉 쥐어서','손바닥 전체로'],hint:'엄지는 구부려서 아래에',explain:'엄지를 구부려서 활대 아래쪽에서 받쳐줘야 해요!'},
+  {q:'활 긋기 각도는?',a:'직각(90도)',ch:['45도','60도','직각(90도)','아무거나'],hint:'줄에 수직으로!',explain:'활이 줄과 90도 직각을 이뤄야 좋은 소리가 나요!'},
+  {q:'바이올린을 어디에 끼워요?',a:'어깨와 턱 사이',ch:['어깨 위','턱 아래만','어깨와 턱 사이','왼쪽 팔 아래'],hint:'숄더레스트가 도움돼요',explain:'어깨와 턱 사이에 끼워야 안정적으로 연주할 수 있어요!'},
+  {q:'왼손 손가락 번호 0번은?',a:'빈 줄',ch:['엄지','빈 줄','검지','소지'],hint:'0 = 오픈 스트링',explain:'0번은 아무 손가락도 누르지 않은 빈 줄(오픈 스트링)이에요!'},
+  {q:'D장조 첫 음은?',a:'레(D)',ch:['도(C)','레(D)','미(E)','솔(G)'],hint:'D장조의 D = 레',explain:'D장조는 레(D)음으로 시작해요. D장조 스케일: 레-미-파#-솔-라-시-도#-레'},
 ];
 function genMusicTheory(){return[...MUSIC_THEORY_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>({type:'choice',question:m.q,big:'📄',hint:m.hint,answer:m.a,choices:[...m.ch].sort(()=>Math.random()-.5)}));}
-function genPiano(){return[...PIANO_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>({type:'choice',question:m.q,big:'🎹',hint:m.hint,answer:m.a,choices:[...m.ch].sort(()=>Math.random()-.5)}));}
-function genViolin(){return[...VIOLIN_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>({type:'choice',question:m.q,big:'🎻',hint:m.hint,answer:m.a,choices:[...m.ch].sort(()=>Math.random()-.5)}));}
+function genPiano(){
+  return [...PIANO_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>{
+    if(m.type==='piano_key') return {type:'piano_key',question:m.q,big:'🎹',hint:m.hint,answer:m.a,explain:m.explain||''};
+    return {type:'choice',question:m.q,big:'🎹',hint:m.hint,answer:m.a,explain:m.explain||'',choices:[...m.ch].sort(()=>Math.random()-.5)};
+  });
+}
+function genViolin(){
+  return [...VIOLIN_QS].sort(()=>Math.random()-.5).slice(0,10).map(m=>{
+    if(m.type==='violin_str') return {type:'violin_str',question:m.q,big:'🎻',hint:m.hint,answer:m.a,explain:m.explain||''};
+    return {type:'choice',question:m.q,big:'🎻',hint:m.hint,answer:m.a,explain:m.explain||'',choices:[...m.ch].sort(()=>Math.random()-.5)};
+  });
+}
 
 // TIMER
 function startTimer(){
@@ -1024,6 +1329,8 @@ function renderQ(){
   else if(q.isReading)renderReading(q,area);
   else if(q.type==='money')renderMoney(q,area);
   else if(q.type==='spell')renderSpell(q,area);
+  else if(q.type==='piano_key')renderPianoKeyQ(q,area);
+  else if(q.type==='violin_str')renderViolinStrQ(q,area);
   else renderChoice(q,area);
   if(q.type!=='dictation'&&!q.isReading&&q.type!=='spell')startTimer();
 }
@@ -1082,6 +1389,39 @@ function renderSpell(q,area){
   const su=document.createElement('button');su.className='bsub';su.textContent='✅ 확인!';su.onclick=()=>{if(typedAns.length>0)checkAns(typedAns.toLowerCase(),q.answer,su,true);};
   row.appendChild(cl);row.appendChild(su);area.appendChild(row);
 }
+function renderPianoKeyQ(q, area){
+  // 힌트 표시
+  const hintDiv = document.createElement('div');
+  hintDiv.style.cssText = 'font-size:.85rem;color:#888;margin-bottom:8px;text-align:center;width:100%;';
+  hintDiv.textContent = '💡 ' + q.hint;
+  area.appendChild(hintDiv);
+
+  let selectedNote = null;
+  const sub = renderPianoKeyboard(q.answer, area, (noteName, noteKey) => {
+    selectedNote = noteName;
+    sub.disabled = false;
+  });
+  sub.onclick = () => {
+    if(selectedNote) checkAns(selectedNote, q.answer, sub, true);
+  };
+}
+
+function renderViolinStrQ(q, area){
+  const hintDiv = document.createElement('div');
+  hintDiv.style.cssText = 'font-size:.85rem;color:#888;margin-bottom:8px;text-align:center;width:100%;';
+  hintDiv.textContent = '💡 ' + q.hint;
+  area.appendChild(hintDiv);
+
+  let selectedStr = null;
+  const sub = renderViolinStrings(q.answer, area, (strName) => {
+    selectedStr = strName;
+    sub.disabled = false;
+  });
+  sub.onclick = () => {
+    if(selectedStr) checkAns(selectedStr, q.answer, sub, true);
+  };
+}
+
 function renderChoice(q,area){
   const g=document.createElement('div');const long=q.choices.some(c=>String(c).length>6);g.className='achoices'+(long?' wide':'');
   q.choices.forEach(ch=>{const b=document.createElement('button');b.className='abtn';b.textContent=ch;b.onclick=()=>checkAns(ch,q.answer,b);g.appendChild(b);});
@@ -1094,12 +1434,50 @@ function checkAns(chosen,correct,btn,isText=false,isTimeout=false){
   document.querySelectorAll('.abtn,.albtn,.bsub,.bclear,.hintbtn,.ltbtn').forEach(b=>b.disabled=true);
   const norm=s=>String(s).trim().replace(/\s+/g,'');
   const ok=!isTimeout&&norm(chosen).toLowerCase()===norm(correct).toLowerCase();
-  if(ok){score++;stats[curSubject].c++;if(btn&&!isText)btn.classList.add('c');const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#6BCB77';playCorrect();if(timeLeft>10)bonusStars++;}
-  else{if(btn&&!isText)btn.classList.add('w');document.querySelectorAll('.abtn').forEach(b=>{if(b.textContent==String(correct))b.classList.add('c');});const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#FF6B6B';const dw=document.getElementById('dWord');if(dw){dw.textContent=correct;dw.style.color='var(--dark)';}playWrong();
-    if(isTimeout){const area=document.getElementById('aArea');const msg=document.createElement('div');msg.style.cssText='background:#ffe8e8;border-radius:12px;padding:10px;text-align:center;font-weight:700;color:#c0392b;font-size:.88rem;margin-top:8px;';msg.textContent='⏱️ 시간 초과! 정답: '+correct;area.appendChild(msg);}
+  const curQdata = questions[curQ] || {};
+  if(ok){
+    score++;stats[curSubject].c++;
+    if(btn&&!isText)btn.classList.add('c');
+    const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#6BCB77';
+    playCorrect();if(timeLeft>10)bonusStars++;
+    // 정답 설명 표시
+    if(curQdata.explain){
+      setTimeout(()=>{
+        const area=document.getElementById('aArea');
+        const ex=document.createElement('div');ex.className='explain-box';
+        ex.innerHTML='✅ <b>정답!</b> ' + curQdata.explain;
+        area.appendChild(ex);
+      },200);
+    }
+  } else {
+    if(btn&&!isText)btn.classList.add('w');
+    document.querySelectorAll('.abtn').forEach(b=>{if(b.textContent==String(correct))b.classList.add('c');});
+    const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#FF6B6B';
+    const dw=document.getElementById('dWord');if(dw){dw.textContent=correct;dw.style.color='var(--dark)';}
+    playWrong();
+    // 오답노트에 추가
+    addWrongNote(curQdata, chosen);
+    // 오답 설명 표시
+    setTimeout(()=>{
+      const area=document.getElementById('aArea');
+      let explainText = curQdata.explain || '';
+      const msg=document.createElement('div');
+      msg.className='explain-box';
+      msg.style.borderColor='#FF6B6B';
+      msg.style.background='linear-gradient(135deg,#ffe8e8,#fff5f5)';
+      msg.innerHTML='❌ <b>정답: '+correct+'</b>' + (explainText?'<br>💡 '+explainText:'');
+      area.appendChild(msg);
+    },200);
+    if(isTimeout){
+      const area=document.getElementById('aArea');
+      const msg=document.createElement('div');
+      msg.style.cssText='background:#ffe8e8;border-radius:12px;padding:10px;text-align:center;font-weight:700;color:#c0392b;font-size:.88rem;margin-top:8px;';
+      msg.textContent='⏱️ 시간 초과! 정답: '+correct;
+      area.appendChild(msg);
+    }
   }
   stats[curSubject].t++;save();
-  setTimeout(()=>{curQ++;if(curQ>=questions.length)showResult();else{typedAns='';renderQ();}},1100);
+  setTimeout(()=>{curQ++;if(curQ>=questions.length)showResult();else{typedAns='';renderQ();}},1600);
 }
 
 // RESULT
@@ -1122,6 +1500,16 @@ function showResult(){
   const gbox=document.getElementById('gachaBox');
   if(stars>=2){const sticker=STICKER_POOL[Math.floor(Math.random()*STICKER_POOL.length)];if(stickers.length<20)stickers.push(sticker);gbox.style.display='';gbox.innerHTML='<div style="font-size:.82rem;font-weight:700;color:#856404;margin-bottom:8px;">🎁 뽑기 보상!</div><div class="gacha-emoji">'+sticker+'</div><div class="gacha-name">새 스티커 획득! 🎉</div>';}
   else gbox.style.display='none';
+  // 학습시간 기록
+  const dur = getStudyDuration();
+  const durMin = Math.floor(dur/60);
+  const durSec = dur%60;
+  const durTxt = durMin>0 ? durMin+'분 '+durSec+'초' : durSec+'초';
+  document.getElementById('rDetail').textContent += '  ⏱️ 학습시간: '+durTxt;
+  // 오답 노트 버튼
+  const wBtn = document.getElementById('wrongNoteBtn');
+  const wrongThisSession = wrongNotes.filter(n=>n.subject===curSubject).length;
+  if(wBtn) { wBtn.style.display = wrongThisSession>0?'':'none'; wBtn.textContent='📝 오답 노트 ('+Math.min(wrongThisSession,total-score)+'개)'; }
   showScreen('resultScreen');if(stars>=2)confetti();if(stars===3)playLevelup();
 }
 
