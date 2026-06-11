@@ -447,10 +447,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
   <div class="sectitle">📋 최근 학습 기록</div>
   <div class="hlist" id="pHist"></div>
   <div class="notifysec"><div class="ncard">
-    <div style="font-weight:900;margin-bottom:10px;">📱 알림 설정</div>
-    <input class="ninput" type="email" id="nEmail" placeholder="이메일 주소"/>
-    <input class="ninput" type="tel" id="nPhone" placeholder="전화번호"/>
-    <button class="bnot" onclick="saveNotify()">💾 저장</button>
+    <div style="font-weight:900;margin-bottom:10px;">📱 텔레그램 알림 설정</div>
+    <div style="font-size:.8rem;color:#888;margin-bottom:10px;">아이가 공부를 마치면 텔레그램으로 알림을 보내요. 봇 토큰과 Chat ID를 입력하세요.</div>
+    <input class="ninput" type="text" id="tgToken" placeholder="봇 토큰 (예: 1234:ABCD...)"/>
+    <input class="ninput" type="text" id="tgChatId" placeholder="Chat ID (예: 1724310487)"/>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="bnot" onclick="saveNotify()">💾 저장</button>
+      <button class="bnot" style="background:var(--sky);" onclick="testTelegram()">📨 테스트 전송</button>
+    </div>
     <div id="nLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
   </div></div>
   <div class="notifysec"><div class="ncard">
@@ -461,6 +465,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
       <button class="bnot" style="background:var(--sky);" onclick="document.getElementById('restoreFile').click()">⬆️ 복원하기</button>
       <input type="file" id="restoreFile" accept=".json" style="display:none;" onchange="restoreData(event)"/>
     </div>
+    <div id="backupLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
+  </div></div>
   <div class="notifysec"><div class="ncard">
     <div style="font-weight:900;margin-bottom:10px;">☁️ 클라우드 동기화</div>
     <div id="pbStatus" style="font-size:.82rem;color:#888;">연결 확인 중...</div>
@@ -1614,6 +1620,14 @@ function showResult(){
   hist.unshift(entry);if(hist.length>30)hist=hist.slice(0,30);
   checkBadges(score,total,pct);save();
   pbSaveSession(entry);
+  // 텔레그램 알림
+  const starEmoji='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  const tgMsg='🌟 '+NAMES[curSubject]+' 공부 완료!\n\n'+
+    '📊 점수: '+score+'/'+total+'문제 ('+pct+'%)\n'+
+    '⭐ 별: '+starEmoji+'\n'+
+    '🔥 연속 학습: '+streak+'일\n'+
+    '⏱️ 학습시간: '+Math.floor(getStudyDuration()/60)+'분 '+(getStudyDuration()%60)+'초';
+  sendTelegram(tgMsg);
   const es=['😢','😊','😄','🎉'];const ms=['괜찮아요! 다시 해봐요 💪','잘 했어요! 조금 더!','훌륭해요!','완벽해요! 최고예요! 🏆'];
   document.getElementById('rEmoji').textContent=es[stars];document.getElementById('rMsg').textContent=ms[stars];
   document.getElementById('rScore').textContent=score+' / '+total;document.getElementById('rStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
@@ -1759,10 +1773,49 @@ function restoreData(event){
   reader.readAsText(file);
 }
 function saveNotify(){
-  const e=document.getElementById('nEmail').value,p=document.getElementById('nPhone').value;const log=document.getElementById('nLog');
-  if(!e&&!p){log.textContent='⚠️ 입력해주세요.';return;}
-  try{localStorage.setItem('ne',e);localStorage.setItem('np',p);}catch(ex){}
-  log.innerHTML='✅ 저장 완료!<br><small style="color:#bbb">실제 알림은 서버 연동 시</small>';
+  const token=document.getElementById('tgToken').value.trim();
+  const chatId=document.getElementById('tgChatId').value.trim();
+  const log=document.getElementById('nLog');
+  if(!token||!chatId){log.textContent='⚠️ 봇 토큰과 Chat ID를 모두 입력해주세요.';return;}
+  try{localStorage.setItem('tg_token',token);localStorage.setItem('tg_chat',chatId);}catch(ex){}
+  log.innerHTML='✅ 저장 완료! 이제 공부를 마치면 알림이 가요.';
+}
+async function sendTelegram(message){
+  let token,chatId;
+  try{token=localStorage.getItem('tg_token');chatId=localStorage.getItem('tg_chat');}catch(e){}
+  if(!token||!chatId)return;
+  // 여러 Chat ID 지원 (쉼표로 구분)
+  const ids=chatId.split(',').map(s=>s.trim()).filter(Boolean);
+  for(const id of ids){
+    try{
+      await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:id,text:message})
+      });
+    }catch(e){console.log('텔레그램 전송 실패',e);}
+  }
+}
+async function testTelegram(){
+  const token=document.getElementById('tgToken').value.trim();
+  const chatId=document.getElementById('tgChatId').value.trim();
+  const log=document.getElementById('nLog');
+  if(!token||!chatId){log.textContent='⚠️ 먼저 봇 토큰과 Chat ID를 입력해주세요.';return;}
+  // 저장도 함께
+  try{localStorage.setItem('tg_token',token);localStorage.setItem('tg_chat',chatId);}catch(ex){}
+  log.textContent='📨 전송 중...';
+  const ids=chatId.split(',').map(s=>s.trim()).filter(Boolean);
+  let ok=true;
+  for(const id of ids){
+    try{
+      const res=await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:id,text:'🌟 반짝반짝 공부방 알림 테스트예요! 연결 성공! 🎉'})
+      });
+      if(!res.ok)ok=false;
+    }catch(e){ok=false;}
+  }
+  log.innerHTML=ok?'✅ 테스트 메시지 전송 완료! 텔레그램을 확인하세요.':'❌ 전송 실패. 토큰과 Chat ID를 확인하세요.';
 }
 function confetti(){
   const wrap=document.getElementById('cfWrap');wrap.innerHTML='';const cols=['#FFD93D','#6EC6F5','#6BCB77','#FF6B6B','#C77DFF'];
@@ -1771,7 +1824,7 @@ function confetti(){
 }
 
 load();updateHomeUI();
-try{const ne=localStorage.getItem('ne'),np=localStorage.getItem('np');if(ne)document.getElementById('nEmail').value=ne;if(np)document.getElementById('nPhone').value=np;}catch(e){}
+try{const tt=localStorage.getItem('tg_token'),tc=localStorage.getItem('tg_chat');if(tt&&document.getElementById('tgToken'))document.getElementById('tgToken').value=tt;if(tc&&document.getElementById('tgChatId'))document.getElementById('tgChatId').value=tc;}catch(e){}
 
 // ══════════════════════════════════════════
 //  PocketBase 연동
