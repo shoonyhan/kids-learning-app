@@ -461,7 +461,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
       <button class="bnot" style="background:var(--sky);" onclick="document.getElementById('restoreFile').click()">⬆️ 복원하기</button>
       <input type="file" id="restoreFile" accept=".json" style="display:none;" onchange="restoreData(event)"/>
     </div>
-    <div id="backupLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
+  <div class="notifysec"><div class="ncard">
+    <div style="font-weight:900;margin-bottom:10px;">☁️ 클라우드 동기화</div>
+    <div id="pbStatus" style="font-size:.82rem;color:#888;">연결 확인 중...</div>
   </div></div>
 </div>
 
@@ -1611,6 +1613,7 @@ function showResult(){
   const entry={subject:curSubject,level:curLevel,score,total,stars,date:new Date().toLocaleString('ko-KR'),dayKey:new Date().toISOString().slice(0,10),duration:getStudyDuration()};
   hist.unshift(entry);if(hist.length>30)hist=hist.slice(0,30);
   checkBadges(score,total,pct);save();
+  pbSaveSession(entry);
   const es=['😢','😊','😄','🎉'];const ms=['괜찮아요! 다시 해봐요 💪','잘 했어요! 조금 더!','훌륭해요!','완벽해요! 최고예요! 🏆'];
   document.getElementById('rEmoji').textContent=es[stars];document.getElementById('rMsg').textContent=ms[stars];
   document.getElementById('rScore').textContent=score+' / '+total;document.getElementById('rStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
@@ -1683,6 +1686,8 @@ function renderParent(){
   if(!hist.length){hl.innerHTML='<div style="color:#aaa;font-size:.83rem;padding:14px;">아직 학습 기록이 없어요.</div>';}
   else {hl.innerHTML=hist.slice(0,12).map(h=>{const pct=Math.round(h.score/h.total*100);const cls=pct>=80?'sg':pct>=50?'so':'sp';return'<div class="hitem"><div style="font-size:1.5rem;">'+ICONS[h.subject]+'</div><div style="flex:1"><div style="font-weight:900;font-size:.86rem;">'+NAMES[h.subject]+' · Lv'+(h.level||1)+' · ⭐'+h.stars+'</div><div style="font-size:.7rem;color:#aaa;">'+h.date+'</div></div><div class="hscore '+cls+'">'+h.score+'/'+h.total+'<br><span style="font-size:.65rem;">'+pct+'%</span></div></div>';}).join('');}
   renderWeekGraph();
+  const pbs=document.getElementById('pbStatus');
+  if(pbs) pbs.innerHTML = pbOnline ? '✅ 나스 서버에 연결됨 — 학습 기록이 자동 저장돼요!' : '📴 오프라인 — 이 기기에만 저장돼요 (나스 연결 시 자동 동기화)';
 }
 
 // 주간 학습량 그래프
@@ -1767,6 +1772,57 @@ function confetti(){
 
 load();updateHomeUI();
 try{const ne=localStorage.getItem('ne'),np=localStorage.getItem('np');if(ne)document.getElementById('nEmail').value=ne;if(np)document.getElementById('nPhone').value=np;}catch(e){}
+
+// ══════════════════════════════════════════
+//  PocketBase 연동
+// ══════════════════════════════════════════
+const PB_URL = 'https://shoonyhan.mooo.com';
+const PB_EMAIL = 'app@shoonyhan.com';
+const PB_PASSWORD = 'shoonyhan2026';
+let pbToken = null;
+let pbOnline = false;
+
+// 자동 로그인
+async function pbLogin(){
+  try{
+    const res = await fetch(PB_URL + '/api/collections/users/auth-with-password', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({identity:PB_EMAIL, password:PB_PASSWORD})
+    });
+    if(!res.ok) throw new Error('login failed');
+    const data = await res.json();
+    pbToken = data.token;
+    pbOnline = true;
+    console.log('PocketBase 연결 성공');
+  }catch(e){
+    pbOnline = false;
+    console.log('PocketBase 오프라인 (로컬 저장만 사용)');
+  }
+}
+
+// 학습 세션 저장
+async function pbSaveSession(entry){
+  if(!pbOnline || !pbToken) return;
+  try{
+    await fetch(PB_URL + '/api/collections/sessions/records', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':pbToken},
+      body:JSON.stringify({
+        subject: entry.subject,
+        level: entry.level,
+        score: entry.score,
+        total: entry.total,
+        stars: entry.stars,
+        pct: Math.round(entry.score/entry.total*100),
+        duration: entry.duration || 0
+      })
+    });
+  }catch(e){ console.log('세션 저장 실패', e); }
+}
+
+// 앱 시작 시 로그인 시도
+pbLogin();
 
 // ══════════════════════════════════════════
 //  PWA - Service Worker 등록
