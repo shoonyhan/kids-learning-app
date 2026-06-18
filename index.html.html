@@ -558,6 +558,8 @@ function save(){
     localStorage.setItem('lsd',lastStudyDate);
     localStorage.setItem('mp_'+todayKey,JSON.stringify(missionProgress));
   }catch(e){}
+  // 클라우드에도 진행도 저장 (디바운스)
+  scheduleCloudSave();
 }
 
 function updateStreak(){
@@ -1855,6 +1857,8 @@ async function pbLogin(){
     console.log('PocketBase 연결 성공');
     // 로그인 후 공용 설정(텔레그램 등) 불러오기
     await pbLoadSettings();
+    // 진행도 불러오기 (모든 기기 동기화)
+    await cloudLoadProgress();
   }catch(e){
     pbOnline = false;
     console.log('PocketBase 오프라인 (로컬 저장만 사용)');
@@ -1902,6 +1906,71 @@ async function pbSaveSetting(key, value){
       });
     }
   }catch(e){ console.log('설정 저장 실패', e); }
+}
+
+// ── 진행도 클라우드 동기화 ──
+let cloudSaveTimer = null;
+function scheduleCloudSave(){
+  if(!pbOnline) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(cloudSaveProgress, 1500);
+}
+function getProgressSnapshot(){
+  return {
+    stats, hist, earnedBadges, stickers, totalStars, streak,
+    lastStudyDate, wrongNotes,
+    missions:{[todayKey]:missionProgress},
+    _updated: Date.now()
+  };
+}
+async function cloudSaveProgress(){
+  if(!pbOnline || !pbToken) return;
+  try{
+    await pbSaveSetting('progress', JSON.stringify(getProgressSnapshot()));
+  }catch(e){ console.log('진행도 저장 실패', e); }
+}
+async function cloudLoadProgress(){
+  if(!pbOnline || !pbToken) return;
+  try{
+    const res = await fetch(PB_URL + "/api/collections/settings/records?filter=(key='progress')", {
+      headers:{'Authorization':pbToken}
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data.items || !data.items.length) return;
+    const cloud = JSON.parse(data.items[0].value);
+    // 클라우드가 더 많은 별을 가지고 있거나 더 최신이면 적용
+    const localStars = totalStars;
+    const cloudStars = cloud.totalStars || 0;
+    // 별 개수가 더 많은 쪽을 신뢰 (더 많이 공부한 데이터)
+    if(cloudStars >= localStars){
+      if(cloud.stats) Object.keys(cloud.stats).forEach(k=>{ if(stats[k]) stats[k]={...stats[k],...cloud.stats[k]}; else stats[k]=cloud.stats[k]; });
+      if(cloud.hist) hist = cloud.hist;
+      if(cloud.earnedBadges) earnedBadges = cloud.earnedBadges;
+      if(cloud.stickers) stickers = cloud.stickers;
+      if(typeof cloud.totalStars==='number') totalStars = cloud.totalStars;
+      if(typeof cloud.streak==='number') streak = cloud.streak;
+      if(cloud.lastStudyDate) lastStudyDate = cloud.lastStudyDate;
+      if(cloud.wrongNotes) wrongNotes = cloud.wrongNotes;
+      if(cloud.missions && cloud.missions[todayKey]) missionProgress = cloud.missions[todayKey];
+      // 로컬에도 반영
+      save();
+      try{localStorage.setItem('wn',JSON.stringify(wrongNotes));}catch(e){}
+      // 화면 갱신
+      updateHomeUI();
+      const active=document.querySelector('.screen.active');
+      if(active){
+        if(active.id==='subjectMenu')updateSubjectMenu();
+        if(active.id==='missionScreen')renderMission();
+        if(active.id==='parentScreen')renderParent();
+        if(active.id==='badgesScreen')renderBadges();
+      }
+      console.log('클라우드 진행도 불러옴 (별 '+totalStars+'개)');
+    } else {
+      // 로컬이 더 최신이면 클라우드를 덮어씀
+      cloudSaveProgress();
+    }
+  }catch(e){ console.log('진행도 불러오기 실패', e); }
 }
 
 // 학습 세션 저장
