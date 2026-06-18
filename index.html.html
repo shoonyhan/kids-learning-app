@@ -1778,7 +1778,10 @@ function saveNotify(){
   const log=document.getElementById('nLog');
   if(!token||!chatId){log.textContent='⚠️ 봇 토큰과 Chat ID를 모두 입력해주세요.';return;}
   try{localStorage.setItem('tg_token',token);localStorage.setItem('tg_chat',chatId);}catch(ex){}
-  log.innerHTML='✅ 저장 완료! 이제 공부를 마치면 알림이 가요.';
+  // 포켓베이스에도 저장 (모든 기기 공유)
+  pbSaveSetting('tg_token', token);
+  pbSaveSetting('tg_chat', chatId);
+  log.innerHTML = pbOnline ? '✅ 저장 완료! 모든 기기에서 알림이 가요.' : '✅ 이 기기에 저장 완료! (나스 연결 시 모든 기기 공유)';
 }
 async function sendTelegram(message){
   let token,chatId;
@@ -1801,8 +1804,10 @@ async function testTelegram(){
   const chatId=document.getElementById('tgChatId').value.trim();
   const log=document.getElementById('nLog');
   if(!token||!chatId){log.textContent='⚠️ 먼저 봇 토큰과 Chat ID를 입력해주세요.';return;}
-  // 저장도 함께
+  // 저장도 함께 (로컬 + 포켓베이스)
   try{localStorage.setItem('tg_token',token);localStorage.setItem('tg_chat',chatId);}catch(ex){}
+  pbSaveSetting('tg_token', token);
+  pbSaveSetting('tg_chat', chatId);
   log.textContent='📨 전송 중...';
   const ids=chatId.split(',').map(s=>s.trim()).filter(Boolean);
   let ok=true;
@@ -1848,10 +1853,55 @@ async function pbLogin(){
     pbToken = data.token;
     pbOnline = true;
     console.log('PocketBase 연결 성공');
+    // 로그인 후 공용 설정(텔레그램 등) 불러오기
+    await pbLoadSettings();
   }catch(e){
     pbOnline = false;
     console.log('PocketBase 오프라인 (로컬 저장만 사용)');
   }
+}
+
+// 공용 설정 불러오기 (텔레그램 토큰/Chat ID)
+async function pbLoadSettings(){
+  if(!pbOnline || !pbToken) return;
+  try{
+    const res = await fetch(PB_URL + "/api/collections/settings/records?perPage=50", {
+      headers:{'Authorization':pbToken}
+    });
+    if(!res.ok) return;
+    const data = await res.json();
+    (data.items||[]).forEach(item=>{
+      if(item.key==='tg_token'){ try{localStorage.setItem('tg_token',item.value);}catch(e){} const el=document.getElementById('tgToken'); if(el)el.value=item.value; }
+      if(item.key==='tg_chat'){ try{localStorage.setItem('tg_chat',item.value);}catch(e){} const el=document.getElementById('tgChatId'); if(el)el.value=item.value; }
+    });
+  }catch(e){ console.log('설정 불러오기 실패', e); }
+}
+
+// 공용 설정 저장 (key별로 upsert)
+async function pbSaveSetting(key, value){
+  if(!pbOnline || !pbToken) return;
+  try{
+    // 기존 레코드 찾기
+    const findRes = await fetch(PB_URL + "/api/collections/settings/records?filter=(key='" + key + "')", {
+      headers:{'Authorization':pbToken}
+    });
+    const found = await findRes.json();
+    if(found.items && found.items.length>0){
+      // 업데이트
+      await fetch(PB_URL + '/api/collections/settings/records/' + found.items[0].id, {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','Authorization':pbToken},
+        body:JSON.stringify({key, value})
+      });
+    } else {
+      // 새로 생성
+      await fetch(PB_URL + '/api/collections/settings/records', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':pbToken},
+        body:JSON.stringify({key, value})
+      });
+    }
+  }catch(e){ console.log('설정 저장 실패', e); }
 }
 
 // 학습 세션 저장
