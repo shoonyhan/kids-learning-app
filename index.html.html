@@ -296,11 +296,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
     <div class="streak-badge" id="homeStreak">🔥 0일 연속</div>
     <div class="char-level-badge" id="homeCharLevel">🌱 씨앗</div>
   </div>
+  <div id="reviewBanner" style="display:none;background:rgba(255,255,255,.9);border-radius:16px;padding:12px 16px;margin-bottom:14px;max-width:310px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.1);" onclick="startReview()">
+    <div style="font-size:.9rem;font-weight:900;color:#C77DFF;" id="reviewBannerText">📝 복습할 문제가 있어요!</div>
+  </div>
   <div class="hbtns">
     <button class="btn btn-y" onclick="showScreen('missionScreen')">📅 오늘 미션 확인</button>
     <button class="btn btn-w" onclick="showScreen('subjectMenu')">📚 공부하기</button>
     <button class="btn btn-p" onclick="showScreen('badgesScreen')">🏆 배지 & 스티커</button>
-    <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;box-shadow:none;" onclick="showScreen('parentScreen')">👨‍👩‍👧 부모님 확인</button>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.25);color:#fff;box-shadow:none;" onclick="openParent()">👨‍👩‍👧 부모님 확인</button>
   </div>
 </div>
 
@@ -471,6 +474,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);min-height:10
     <div style="font-weight:900;margin-bottom:10px;">☁️ 클라우드 동기화</div>
     <div id="pbStatus" style="font-size:.82rem;color:#888;">연결 확인 중...</div>
   </div></div>
+  <div class="notifysec"><div class="ncard">
+    <div style="font-weight:900;margin-bottom:10px;">🔒 부모님 화면 잠금</div>
+    <div style="font-size:.8rem;color:#888;margin-bottom:10px;">4자리 숫자 비밀번호를 설정하면 아이가 이 화면에 못 들어와요. (비우고 저장하면 해제)</div>
+    <input class="ninput" type="password" inputmode="numeric" id="pinSet" maxlength="4" placeholder="4자리 숫자 (예: 1234)"/>
+    <button class="bnot" style="background:var(--purple);" onclick="savePin()">💾 비밀번호 저장</button>
+    <div id="pinLog" style="margin-top:8px;font-size:.8rem;color:#888;"></div>
+  </div></div>
 </div>
 
 <div class="cfwrap" id="cfWrap"></div>
@@ -519,6 +529,7 @@ const STICKER_POOL=['🦋','🌈','🦄','🐉','🎠','🌙','☀️','⚡','�
 let curSubject='math', curLevel=1, questions=[], curQ=0, score=0, totalStars=0;
 let typedAns='', hintLv=0, learnPage=0, learnPages=[];
 let timerInterval=null, timeLeft=0, bonusStars=0;
+let adaptLevel=1, adaptStreak=0, adaptNote='';
 
 let hist=[], stats={}, earnedBadges=[], stickers=[], streak=0, lastStudyDate='';
 ['math','money','korean','english','hanja','music_theory','piano','violin'].forEach(k=>stats[k]={c:0,t:0,level:1,done:false});
@@ -534,6 +545,12 @@ const MISSIONS=[
 ];
 let missionProgress={};
 let todayKey='';
+// 로컬(한국) 날짜 키 — toISOString은 UTC라 밤 9시 이후 날짜가 어긋남
+function localDateKey(d){
+  d=d||new Date();
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
 
 function load(){
   try{hist=JSON.parse(localStorage.getItem('sh')||'[]');}catch(e){}
@@ -543,7 +560,7 @@ function load(){
   try{totalStars=parseInt(localStorage.getItem('ts')||'0');}catch(e){}
   try{streak=parseInt(localStorage.getItem('streak')||'0');}catch(e){}
   try{lastStudyDate=localStorage.getItem('lsd')||'';}catch(e){}
-  todayKey=new Date().toISOString().slice(0,10);
+  todayKey=localDateKey();
   try{missionProgress=JSON.parse(localStorage.getItem('mp_'+todayKey)||'{}');}catch(e){}
   updateStreak();
 }
@@ -563,15 +580,19 @@ function save(){
 }
 
 function updateStreak(){
-  const today=new Date().toISOString().slice(0,10);
-  const yesterday=new Date(Date.now()-864e5).toISOString().slice(0,10);
-  if(lastStudyDate===today) return;
-  if(lastStudyDate===yesterday) streak++;
-  else if(lastStudyDate!==today) { if(lastStudyDate!==yesterday) streak=1; }
+  // 앱 시작 시: 이틀 이상 안 했으면 스트릭 리셋만 (증가는 markStudiedToday에서)
+  const today=localDateKey();
+  const yesterday=localDateKey(new Date(Date.now()-864e5));
+  if(lastStudyDate && lastStudyDate!==today && lastStudyDate!==yesterday) streak=0;
 }
 function markStudiedToday(){
-  const today=new Date().toISOString().slice(0,10);
-  if(lastStudyDate!==today){ lastStudyDate=today; if(streak===0)streak=1; save(); }
+  const today=localDateKey();
+  const yesterday=localDateKey(new Date(Date.now()-864e5));
+  if(lastStudyDate===today) return;
+  if(lastStudyDate===yesterday) streak++;
+  else streak=1;
+  lastStudyDate=today;
+  save();
 }
 
 // ══════════════════════════════════════════
@@ -683,6 +704,37 @@ function updateHomeUI(){
   document.getElementById('homeChar').textContent=ch.emoji;
   document.getElementById('homeStreak').textContent=`🔥 ${streak}일 연속`;
   document.getElementById('homeCharLevel').textContent=`${ch.emoji} ${ch.name}`;
+  // 복습 알림: 오답이 5개 이상 쌓이면 배너 표시
+  const banner=document.getElementById('reviewBanner');
+  if(banner){
+    if(wrongNotes.length>=5){
+      banner.style.display='';
+      document.getElementById('reviewBannerText').textContent='📝 복습할 문제가 '+wrongNotes.length+'개 있어요! 눌러서 복습하기';
+    } else {
+      banner.style.display='none';
+    }
+  }
+}
+// 복습 시작 (모든 과목 오답 중 랜덤)
+function startReview(){
+  if(wrongNotes.length===0)return;
+  const pool=[...wrongNotes].sort(()=>Math.random()-.5).slice(0,10);
+  // 과목은 첫 오답 기준
+  curSubject=pool[0].subject;
+  questions=pool.map(n=>{
+    const others=wrongNotes.filter(x=>x.correct!==n.correct).map(x=>x.correct);
+    const wrongChoices=[...new Set([n.chosen,...others])].filter(c=>c!==n.correct).slice(0,3);
+    const choices=[n.correct,...wrongChoices];
+    while(choices.length<2)choices.push('모름');
+    return {type:'choice',question:n.question,big:'🔄',hint:'복습 문제!',answer:n.correct,explain:n.explain||'',choices:choices.sort(()=>Math.random()-.5),_origSubject:n.subject};
+  });
+  curQ=0;score=0;typedAns='';hintLv=0;bonusStars=0;isRetryMode=true;
+  startStudyTimer();
+  document.getElementById('qBadge').textContent='복습 모드';
+  document.getElementById('qBadge').style.background='#C77DFF';
+  document.getElementById('qLevel').textContent='🔄';
+  showScreen('quizScreen');
+  renderQ();
 }
 function getCharacter(){
   for(let i=CHARS.length-1;i>=0;i--){ if(totalStars>=CHARS[i].stars) return CHARS[i]; }
@@ -776,6 +828,12 @@ function showWrongNote() {
     clrBtn.onclick=()=>{ wrongNotes=wrongNotes.filter(n=>n.subject!==curSubject); try{localStorage.setItem('wn',JSON.stringify(wrongNotes));}catch(e){} showWrongNote(); };
     top.appendChild(clrBtn);
     list.appendChild(top);
+    // 오답 다시 풀기 버튼
+    const retryBtn=document.createElement('button');
+    retryBtn.className='btn btn-r';retryBtn.style.cssText='width:100%;font-size:1rem;padding:14px;margin-bottom:4px;';
+    retryBtn.textContent='🔄 틀린 문제 다시 풀기 ('+filtered.length+'개)';
+    retryBtn.onclick=()=>retryWrongAnswers();
+    list.appendChild(retryBtn);
     filtered.slice(0, 20).forEach(n => {
       const el = document.createElement('div');
       el.className = 'wrong-item';
@@ -788,6 +846,33 @@ function showWrongNote() {
     });
   }
   showScreen('wrongNoteScreen');
+}
+
+// 오답만 다시 풀기
+let isRetryMode = false;
+function retryWrongAnswers(){
+  const filtered = wrongNotes.filter(n => n.subject === curSubject);
+  if(!filtered.length) return;
+  // 오답을 문제 형식으로 변환 (최대 10개)
+  questions = filtered.slice(0, 10).map(n => {
+    // 선택지 재구성: 정답 + 오답들 섞기
+    const others = filtered.filter(x=>x.correct!==n.correct).map(x=>x.correct);
+    const wrongChoices = [...new Set([n.chosen, ...others])].filter(c=>c!==n.correct).slice(0,3);
+    const choices = [n.correct, ...wrongChoices];
+    while(choices.length<2) choices.push('모름');
+    return {
+      type:'choice', question:n.question, big:'🔄', hint:'다시 풀어봐요!',
+      answer:n.correct, explain:n.explain||'',
+      choices: choices.sort(()=>Math.random()-.5)
+    };
+  });
+  curQ=0; score=0; typedAns=''; hintLv=0; bonusStars=0; isRetryMode=true;
+  startStudyTimer();
+  document.getElementById('qBadge').textContent=NAMES[curSubject]+' 복습';
+  document.getElementById('qBadge').style.background=COLORS[curSubject]||'#FF6B6B';
+  document.getElementById('qLevel').textContent='🔄 오답';
+  showScreen('quizScreen');
+  renderQ();
 }
 
 // ══════════════════════════════════════════
@@ -1164,7 +1249,7 @@ const LEARN={
   ],
   hanja:[
     {icon:'字',title:'한자란?',content:'한자는 그림에서 시작했어요:<br><br>🌞 → <b>日</b>(해 일)<br>🌙 → <b>月</b>(달 월)<br>⛰️ → <b>山</b>(뫼 산)<br>💧 → <b>水</b>(물 수)'},
-    {icon:'✍️',title:'획순 따라쓰기',content:'한자는 <b>쓰는 순서(획순)</b>가 있어요!<br><br>아래 버튼을 눌러 획순을 보고 따라 써봐요.',strokeChars:['一','二','三','人','大','山','水','火','木','日','月']},
+    {icon:'✍️',title:'획순 따라쓰기',content:'한자는 <b>쓰는 순서(획순)</b>가 있어요!<br><br>아래 버튼을 눌러 획순을 보고 따라 써봐요.',strokeChars:['一','二','三','十','人','大','小','山','水','火','木','日','月','土','上','下','中','門','父','母']},
     {icon:'🌿',title:'자연 한자',content:'<b>山</b> — 산<br><b>水</b> — 물<br><b>火</b> — 불<br><b>木</b> — 나무'},
     {icon:'👨‍👩‍👧',title:'사람 한자',content:'<b>人</b> — 사람<br><b>父</b> — 아버지<br><b>母</b> — 어머니<br><b>子</b> — 아들·자녀'},
     {icon:'🔢',title:'숫자 한자',content:'<b>一</b>(일) <b>二</b>(이) <b>三</b>(삼)<br><b>四</b>(사) <b>五</b>(오) <b>六</b>(육)<br><b>七</b>(칠) <b>八</b>(팔) <b>九</b>(구) <b>十</b>(십)'},
@@ -1263,7 +1348,7 @@ function learnNav(dir){
 //  QUIZ GENERATION
 // ══════════════════════════════════════════
 function startQuiz(){
-  curQ=0; score=0; typedAns=''; hintLv=0; bonusStars=0;
+  curQ=0; score=0; typedAns=''; hintLv=0; bonusStars=0; adaptLevel=curLevel; adaptStreak=0; adaptNote='';
   questions=genQuestions(curSubject,curLevel);
   const lvL=['','🌱초급','🌿중급','🌳고급','⭐최고급'];
   startStudyTimer();
@@ -1286,16 +1371,33 @@ function genQuestions(subj,lv){
 }
 
 function genMath(lv){
+  // Lv1: 한자리  Lv2: 두자리 받아올림/받아내림 없음  Lv3: 두자리 받아올림/받아내림 있음  Lv4: 세자리
+  const r=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
   const qs=[];
   for(let i=0;i<10;i++){
-    let a,b,op,ans;
-    const doSub=Math.random()<.4;
-    if(lv===1){a=Math.floor(Math.random()*5)+1;b=Math.floor(Math.random()*4)+1;op=doSub&&a>b?'-':'+';}
-    else if(lv===2){a=(Math.floor(Math.random()*5)+1)*10;b=(Math.floor(Math.random()*5)+1)*10;op=doSub&&a>b?'-':'+';}
-    else{a=Math.floor(Math.random()*19)+11;b=Math.floor(Math.random()*9)+1;op=doSub&&a>b?'-':'+';}
-    ans=op==='+'?a+b:a-b;
-    const ws=new Set();while(ws.size<3){const w=ans+(Math.floor(Math.random()*7)-3);if(w!==ans&&w>=0)ws.add(w);}
-    qs.push({type:'choice',question:'계산하면 얼마일까요?',big:a+' '+op+' '+b+' = ?',hint:op==='+'?a+'에 '+b+'를 더해요':a+'에서 '+b+'를 빼요',answer:ans,choices:[...ws,ans].sort(()=>Math.random()-.5)});
+    let a,b,op;
+    const doSub=Math.random()<.45;
+    if(lv===1){
+      if(doSub){ a=r(2,9); b=r(1,a-1); op='-'; }
+      else { a=r(1,9); b=r(1,10-a); op='+'; }
+    } else if(lv===2){
+      // 자릿수별로 직접 만들어 받아올림/받아내림이 절대 안 생기게
+      if(doSub){ const a1=r(1,9),a0=r(1,9); const b1=r(0,a1-1),b0=r(0,a0); a=a1*10+a0; b=b1*10+b0; if(b===0)b=1; op='-'; }
+      else { const a1=r(1,8),a0=r(0,8); const b1=r(0,9-a1),b0=r(0,9-a0); a=a1*10+a0; b=b1*10+b0; if(b===0)b=1; op='+'; }
+    } else if(lv===3){
+      // 일의 자리에서 반드시 받아올림/받아내림 발생
+      if(doSub){ const a1=r(2,9),a0=r(0,8); const b1=r(1,a1-1),b0=r(a0+1,9); a=a1*10+a0; b=b1*10+b0; op='-'; }
+      else { const a1=r(1,7),a0=r(1,9); const b1=r(1,8-a1),b0=r(10-a0,9); a=a1*10+a0; b=b1*10+b0; op='+'; }
+    } else {
+      if(doSub){ a=r(101,999); b=r(11,a-1); op='-'; }
+      else { a=r(100,899); b=r(11,999-a); op='+'; }
+    }
+    const ans=op==='+'?a+b:a-b;
+    const ws=new Set();
+    const cands=[ans+10,ans-10,ans+1,ans-1,ans+2,ans-2,ans+3,ans-3,ans+9,ans-9,ans+11,ans-11].filter(w=>w!==ans&&w>=0).sort(()=>Math.random()-.5);
+    for(const w of cands){ if(ws.size>=3)break; ws.add(w); }
+    const carryHint=lv===3?(op==='+'?' (일의 자리를 더해 10이 넘으면 받아올려요)':' (일의 자리가 모자라면 10을 받아내려요)'):'';
+    qs.push({type:'choice',question:'계산하면 얼마일까요?',big:a+' '+op+' '+b+' = ?',hint:(op==='+'?a+'에 '+b+'를 더해요':a+'에서 '+b+'를 빼요')+carryHint,answer:ans,explain:a+' '+op+' '+b+' = '+ans,choices:[...ws,ans].sort(()=>Math.random()-.5)});
   }
   return qs;
 }
@@ -1313,20 +1415,50 @@ function genMoney(lv){
   return qs;
 }
 const KOR_DICT={
-  1:['사과','나무','하늘','바람','학교','친구','가족','강아지','고양이','나비','연필','책','가방','공책','지우개'],
-  2:['선생님','공부해요','놀이터','자전거','도서관','할머니','할아버지','꽃잎','바닷가','구름','우산','모자','신발'],
-  3:['나는 학교에 가요','강아지가 뛰어요','꽃이 예뻐요','책을 읽어요','밥을 먹어요','비가 내려요','친구와 놀아요','엄마가 좋아요'],
+  1:['사과','나무','하늘','바람','학교','친구','가족','강아지','고양이','나비','연필','책','가방','공책','지우개',
+     '엄마','아빠','동생','언니','오빠','누나','형','집','문','창문','의자','책상','침대','이불','베개',
+     '물','우유','밥','빵','과자','사탕','포도','딸기','수박','참외','토끼','호랑이','사자','코끼리','기린',
+     '오리','닭','돼지','소','말','거북이','개미','벌','물고기','새','꽃','풀','잎','열매','씨앗',
+     '해','달','별','구름','비','눈','바다','산','강','길'],
+  2:['선생님','공부해요','놀이터','자전거','도서관','할머니','할아버지','꽃잎','바닷가','우산','모자','신발',
+     '유치원','운동장','미끄럼틀','그네','시소','색종이','크레파스','스케치북','색연필','물감','가위','풀칠',
+     '냉장고','세탁기','텔레비전','컴퓨터','전화기','시계','거울','빗자루','쓰레기통','휴지',
+     '숟가락','젓가락','접시','그릇','주전자','냄비','도시락','김치','된장','고추장',
+     '병원','약국','시장','가게','은행','우체국','경찰서','소방서','버스','지하철','기차','비행기','배',
+     '무지개','소나기','천둥','번개','안개','이슬','햇살','그림자','메아리',
+     '깨끗해요','더러워요','뜨거워요','차가워요','무거워요','가벼워요','똑같아요','달라요',
+     '왼쪽','오른쪽','앞','뒤','위','아래','안','밖','옆'],
+  3:['나는 학교에 가요','강아지가 뛰어요','꽃이 예뻐요','책을 읽어요','밥을 먹어요','비가 내려요','친구와 놀아요','엄마가 좋아요',
+     '하늘이 파래요','바람이 불어요','새가 노래해요','나비가 날아요','해가 떠요','달이 밝아요',
+     '아빠와 산책해요','동생이 울어요','할머니께 인사해요','선생님이 웃어요','친구를 도와줘요',
+     '손을 깨끗이 씻어요','이를 닦아요','일찍 일어나요','밥을 골고루 먹어요','책을 많이 읽어요',
+     '고맙습니다','안녕하세요','미안합니다','잘 먹겠습니다','안녕히 계세요',
+     '빨간 사과가 맛있어요','노란 바나나를 먹어요','파란 하늘을 봐요','하얀 눈이 와요',
+     '꼭꼭 숨어라','반짝반짝 작은 별','깡충깡충 토끼','엉금엉금 거북이','살랑살랑 바람'],
 };
 const KOR_READ=[
   {p:'봄이 되었어요. 꽃이 피고 새가 노래해요.',qs:[{q:'어떤 계절인가요?',a:'봄',ch:['봄','여름','가을','겨울']},{q:'새는 무엇을 하나요?',a:'노래해요',ch:['자요','노래해요','먹어요','날아요']}]},
   {p:'토끼가 당근을 좋아해요. 밭에서 당근을 뽑았어요.',qs:[{q:'토끼가 좋아하는 것은?',a:'당근',ch:['사과','당근','바나나','딸기']},{q:'어디서 뽑았나요?',a:'밭',ch:['집','학교','밭','공원']}]},
   {p:'수아는 노란 우산을 썼어요. 빗소리가 도닥도닥 들려요.',qs:[{q:'우산 색깔은?',a:'노란색',ch:['빨간색','파란색','노란색','초록색']},{q:'빗소리는?',a:'도닥도닥',ch:['우르릉','도닥도닥','쿵쾅','시원시원']}]},
 ];
+
+// 최근 출제된 항목을 피해서 뽑기 — 풀 전체를 한 바퀴 돌면 초기화
+function pickFresh(key, pool, n, idFn){
+  idFn=idFn||(x=>String(x));
+  let seen=[];
+  try{seen=JSON.parse(localStorage.getItem('seen_'+key)||'[]');}catch(e){}
+  let fresh=pool.filter(x=>!seen.includes(idFn(x)));
+  if(fresh.length<n){ seen=[]; fresh=[...pool]; }
+  const picked=[...fresh].sort(()=>Math.random()-.5).slice(0,n);
+  seen=seen.concat(picked.map(idFn));
+  try{localStorage.setItem('seen_'+key,JSON.stringify(seen));}catch(e){}
+  return picked;
+}
 function genKorean(lv){
   const qs=[];
   if(lv<=2){
     const pool=lv===1?KOR_DICT[1]:[...KOR_DICT[1],...KOR_DICT[2]];
-    [...pool].sort(()=>Math.random()-.5).slice(0,10).forEach(w=>{
+    pickFresh('kor'+lv,pool,10).forEach(w=>{
       qs.push({type:'dictation',question:'낱말을 보고 따라 써보세요!',big:'',hint:'',answer:w,speakText:w});
     });
   } else {
@@ -1338,17 +1470,29 @@ function genKorean(lv){
   return qs.slice(0,10);
 }
 const ENG_WORDS=[
-  {en:'apple',ko:'사과',img:'🍎'},{en:'banana',ko:'바나나',img:'🍌'},
-  {en:'cat',ko:'고양이',img:'🐱'},{en:'dog',ko:'강아지',img:'🐶'},
-  {en:'sun',ko:'해',img:'☀️'},{en:'moon',ko:'달',img:'🌙'},
-  {en:'book',ko:'책',img:'📚'},{en:'car',ko:'자동차',img:'🚗'},
-  {en:'fish',ko:'물고기',img:'🐟'},{en:'bird',ko:'새',img:'🐦'},
-  {en:'tree',ko:'나무',img:'🌳'},{en:'house',ko:'집',img:'🏠'},
-  {en:'ball',ko:'공',img:'⚽'},{en:'star',ko:'별',img:'⭐'},
-  {en:'cake',ko:'케이크',img:'🎂'},{en:'milk',ko:'우유',img:'🥛'},
+  {en:'apple',ko:'사과',img:'🍎'},{en:'banana',ko:'바나나',img:'🍌'},{en:'grape',ko:'포도',img:'🍇'},{en:'orange',ko:'오렌지',img:'🍊'},
+  {en:'cat',ko:'고양이',img:'🐱'},{en:'dog',ko:'강아지',img:'🐶'},{en:'pig',ko:'돼지',img:'🐷'},{en:'cow',ko:'소',img:'🐮'},
+  {en:'lion',ko:'사자',img:'🦁'},{en:'bear',ko:'곰',img:'🐻'},{en:'fish',ko:'물고기',img:'🐟'},{en:'bird',ko:'새',img:'🐦'},
+  {en:'rabbit',ko:'토끼',img:'🐰'},{en:'monkey',ko:'원숭이',img:'🐵'},{en:'duck',ko:'오리',img:'🦆'},{en:'frog',ko:'개구리',img:'🐸'},
+  {en:'sun',ko:'해',img:'☀️'},{en:'moon',ko:'달',img:'🌙'},{en:'star',ko:'별',img:'⭐'},{en:'rain',ko:'비',img:'🌧️'},
+  {en:'snow',ko:'눈',img:'❄️'},{en:'cloud',ko:'구름',img:'☁️'},{en:'tree',ko:'나무',img:'🌳'},{en:'flower',ko:'꽃',img:'🌸'},
+  {en:'book',ko:'책',img:'📚'},{en:'pen',ko:'펜',img:'🖊️'},{en:'bag',ko:'가방',img:'🎒'},{en:'desk',ko:'책상',img:'🪑'},
+  {en:'car',ko:'자동차',img:'🚗'},{en:'bus',ko:'버스',img:'🚌'},{en:'train',ko:'기차',img:'🚂'},{en:'ship',ko:'배',img:'🚢'},
+  {en:'red',ko:'빨강',img:'🔴'},{en:'blue',ko:'파랑',img:'🔵'},{en:'green',ko:'초록',img:'🟢'},{en:'yellow',ko:'노랑',img:'🟡'},
+  {en:'one',ko:'하나',img:'1️⃣'},{en:'two',ko:'둘',img:'2️⃣'},{en:'three',ko:'셋',img:'3️⃣'},{en:'four',ko:'넷',img:'4️⃣'},
+  {en:'five',ko:'다섯',img:'5️⃣'},{en:'six',ko:'여섯',img:'6️⃣'},{en:'seven',ko:'일곱',img:'7️⃣'},{en:'ten',ko:'열',img:'🔟'},
+  {en:'milk',ko:'우유',img:'🥛'},{en:'bread',ko:'빵',img:'🍞'},{en:'egg',ko:'달걀',img:'🥚'},{en:'cake',ko:'케이크',img:'🎂'},
+  {en:'water',ko:'물',img:'💧'},{en:'rice',ko:'밥',img:'🍚'},{en:'pizza',ko:'피자',img:'🍕'},{en:'candy',ko:'사탕',img:'🍬'},
+  {en:'hand',ko:'손',img:'✋'},{en:'eye',ko:'눈(얼굴)',img:'👁️'},{en:'nose',ko:'코',img:'👃'},{en:'ear',ko:'귀',img:'👂'},
+  {en:'mouth',ko:'입',img:'👄'},{en:'foot',ko:'발',img:'🦶'},{en:'head',ko:'머리',img:'🙂'},{en:'hair',ko:'머리카락',img:'💇'},
+  {en:'mom',ko:'엄마',img:'👩'},{en:'dad',ko:'아빠',img:'👨'},{en:'baby',ko:'아기',img:'👶'},{en:'friend',ko:'친구',img:'🧑‍🤝‍🧑'},
+  {en:'house',ko:'집',img:'🏠'},{en:'school',ko:'학교',img:'🏫'},{en:'door',ko:'문',img:'🚪'},{en:'bed',ko:'침대',img:'🛏️'},
+  {en:'hat',ko:'모자',img:'🧢'},{en:'shoe',ko:'신발',img:'👟'},{en:'ball',ko:'공',img:'⚽'},{en:'doll',ko:'인형',img:'🧸'},
+  {en:'big',ko:'큰',img:'🐘'},{en:'small',ko:'작은',img:'🐜'},{en:'hot',ko:'뜨거운',img:'🔥'},{en:'cold',ko:'차가운',img:'🧊'},
+  {en:'happy',ko:'행복한',img:'😊'},{en:'sad',ko:'슬픈',img:'😢'},{en:'run',ko:'달리다',img:'🏃'},{en:'jump',ko:'뛰다',img:'🦘'},
 ];
 function genEnglish(lv){
-  const picked=[...ENG_WORDS].sort(()=>Math.random()-.5).slice(0,10);
+  const picked=pickFresh('eng',ENG_WORDS,10,w=>w.en);
   return picked.map(w=>{
     if(lv===1){const ws=ENG_WORDS.filter(x=>x.en!==w.en).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.en);return{type:'choice',question:"'"+w.ko+"'는 영어로?",big:w.img+' '+w.ko,hint:'',answer:w.en,choices:[...ws,w.en].sort(()=>Math.random()-.5)};}
     else if(lv===2){const ws=ENG_WORDS.filter(x=>x.ko!==w.ko).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.ko);return{type:'choice',question:"'"+w.en+"'은 무슨 뜻?",big:w.img+' '+w.en,hint:'',answer:w.ko,choices:[...ws,w.ko].sort(()=>Math.random()-.5)};}
@@ -1356,17 +1500,24 @@ function genEnglish(lv){
   });
 }
 const HANJA_DATA=[
-  {ch:'山',read:'산',mean:'산',img:'⛰️'},{ch:'水',read:'수',mean:'물',img:'💧'},
-  {ch:'火',read:'화',mean:'불',img:'🔥'},{ch:'木',read:'목',mean:'나무',img:'🌳'},
-  {ch:'日',read:'일',mean:'해·날',img:'☀️'},{ch:'月',read:'월',mean:'달',img:'🌙'},
-  {ch:'人',read:'인',mean:'사람',img:'🧑'},{ch:'母',read:'모',mean:'어머니',img:'👩'},
-  {ch:'父',read:'부',mean:'아버지',img:'👨'},{ch:'子',read:'자',mean:'아들',img:'👦'},
-  {ch:'大',read:'대',mean:'크다',img:'⬆️'},{ch:'小',read:'소',mean:'작다',img:'⬇️'},
-  {ch:'上',read:'상',mean:'위',img:'☝️'},{ch:'下',read:'하',mean:'아래',img:'👇'},
-  {ch:'學',read:'학',mean:'배우다',img:'📚'},{ch:'門',read:'문',mean:'문',img:'🚪'},
+  {ch:'一',read:'일',mean:'하나',img:'1️⃣'},{ch:'二',read:'이',mean:'둘',img:'2️⃣'},{ch:'三',read:'삼',mean:'셋',img:'3️⃣'},{ch:'四',read:'사',mean:'넷',img:'4️⃣'},
+  {ch:'五',read:'오',mean:'다섯',img:'5️⃣'},{ch:'六',read:'육',mean:'여섯',img:'6️⃣'},{ch:'七',read:'칠',mean:'일곱',img:'7️⃣'},{ch:'八',read:'팔',mean:'여덟',img:'8️⃣'},
+  {ch:'九',read:'구',mean:'아홉',img:'9️⃣'},{ch:'十',read:'십',mean:'열',img:'🔟'},
+  {ch:'日',read:'일',mean:'해·날',img:'☀️'},{ch:'月',read:'월',mean:'달',img:'🌙'},{ch:'火',read:'화',mean:'불',img:'🔥'},{ch:'水',read:'수',mean:'물',img:'💧'},
+  {ch:'木',read:'목',mean:'나무',img:'🌳'},{ch:'金',read:'금',mean:'쇠·금',img:'🪙'},{ch:'土',read:'토',mean:'흙',img:'🟫'},
+  {ch:'山',read:'산',mean:'산',img:'⛰️'},{ch:'川',read:'천',mean:'내(시내)',img:'🏞️'},{ch:'天',read:'천',mean:'하늘',img:'🌌'},{ch:'地',read:'지',mean:'땅',img:'🌍'},
+  {ch:'人',read:'인',mean:'사람',img:'🧑'},{ch:'父',read:'부',mean:'아버지',img:'👨'},{ch:'母',read:'모',mean:'어머니',img:'👩'},{ch:'兄',read:'형',mean:'형',img:'👦'},
+  {ch:'弟',read:'제',mean:'아우',img:'🧒'},{ch:'子',read:'자',mean:'아들',img:'👶'},{ch:'女',read:'녀',mean:'여자',img:'👧'},{ch:'王',read:'왕',mean:'임금',img:'👑'},
+  {ch:'大',read:'대',mean:'크다',img:'🐘'},{ch:'小',read:'소',mean:'작다',img:'🐜'},{ch:'中',read:'중',mean:'가운데',img:'🎯'},{ch:'上',read:'상',mean:'위',img:'⬆️'},
+  {ch:'下',read:'하',mean:'아래',img:'⬇️'},{ch:'東',read:'동',mean:'동녘',img:'🌅'},{ch:'西',read:'서',mean:'서녘',img:'🌇'},{ch:'南',read:'남',mean:'남녘',img:'🧭'},
+  {ch:'北',read:'북',mean:'북녘',img:'❄️'},{ch:'門',read:'문',mean:'문',img:'🚪'},{ch:'年',read:'년',mean:'해(년)',img:'📅'},{ch:'生',read:'생',mean:'나다·살다',img:'🌱'},
+  {ch:'先',read:'선',mean:'먼저',img:'🥇'},{ch:'學',read:'학',mean:'배우다',img:'📖'},{ch:'校',read:'교',mean:'학교',img:'🏫'},{ch:'敎',read:'교',mean:'가르치다',img:'👩‍🏫'},
+  {ch:'室',read:'실',mean:'집·방',img:'🏠'},{ch:'長',read:'장',mean:'길다·어른',img:'📏'},{ch:'軍',read:'군',mean:'군사',img:'🎖️'},{ch:'民',read:'민',mean:'백성',img:'🧑‍🤝‍🧑'},
+  {ch:'國',read:'국',mean:'나라',img:'🇰🇷'},{ch:'韓',read:'한',mean:'한국',img:'🇰🇷'},{ch:'萬',read:'만',mean:'일만',img:'💯'},{ch:'靑',read:'청',mean:'푸르다',img:'💙'},
+  {ch:'白',read:'백',mean:'희다',img:'🤍'},{ch:'寸',read:'촌',mean:'마디',img:'📐'},{ch:'外',read:'외',mean:'바깥',img:'🌳'},
 ];
 function genHanja(lv){
-  const picked=[...HANJA_DATA].sort(()=>Math.random()-.5).slice(0,10);
+  const picked=pickFresh('hanja',HANJA_DATA,10,h=>h.ch);
   return picked.map(h=>{
     if(lv===1){const ws=HANJA_DATA.filter(x=>x.mean!==h.mean).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.mean);return{type:'choice',question:'이 한자의 뜻은?',big:h.ch+' '+h.img,hint:"'"+h.read+"'라고 읽어요",answer:h.mean,choices:[...ws,h.mean].sort(()=>Math.random()-.5)};}
     else{const ws=HANJA_DATA.filter(x=>x.read!==h.read).sort(()=>Math.random()-.5).slice(0,3).map(x=>x.read);return{type:'choice',question:'이 한자를 어떻게 읽나요?',big:h.ch+' 뜻: '+h.mean,hint:'소리 내어 읽어봐요',answer:h.read,choices:[...ws,h.read].sort(()=>Math.random()-.5)};}
@@ -1428,9 +1579,9 @@ function genViolin(){
 
 // TIMER
 function startTimer(){
-  stopTimer();timeLeft=20;
+  stopTimer();timeLeft=30;
   const el=document.getElementById('qTimer');
-  if(el){el.textContent='⏱'+timeLeft;el.className='qtimer';}
+  if(el){el.style.display='';el.textContent='⏱'+timeLeft;el.className='qtimer';}
   timerInterval=setInterval(()=>{
     timeLeft--;
     const te=document.getElementById('qTimer');
@@ -1451,6 +1602,7 @@ function renderQ(){
   if(q.type==='dictation'||q.isReading){document.getElementById('qQ').textContent=q.isReading?'📖 글을 읽고 질문에 답하세요!':q.question;document.getElementById('qBig').textContent='';document.getElementById('qHint').textContent='';}
   else{document.getElementById('qQ').textContent=q.question;document.getElementById('qBig').textContent=q.big;document.getElementById('qHint').textContent=q.hint||'';}
   const area=document.getElementById('aArea');area.innerHTML='';
+  if(adaptNote){const n=document.createElement('div');n.style.cssText='width:100%;text-align:center;font-size:.85rem;font-weight:700;color:#C77DFF;background:#f6ecff;border-radius:10px;padding:8px;margin-bottom:6px;animation:popIn .3s;';n.textContent=adaptNote;area.appendChild(n);adaptNote='';}
   if(q.type==='dictation')renderDictation(q,area);
   else if(q.isReading)renderReading(q,area);
   else if(q.type==='money')renderMoney(q,area);
@@ -1458,7 +1610,8 @@ function renderQ(){
   else if(q.type==='piano_key')renderPianoKeyQ(q,area);
   else if(q.type==='violin_str')renderViolinStrQ(q,area);
   else renderChoice(q,area);
-  if(q.type!=='dictation'&&!q.isReading&&q.type!=='spell')startTimer();
+  const noTimer=['dictation','spell','piano_key','violin_str'];
+  if(!noTimer.includes(q.type)&&!q.isReading)startTimer(); else stopTimer();
 }
 function renderDictation(q,area){
   const card=document.createElement('div');card.className='dictcard';
@@ -1565,11 +1718,26 @@ function checkAns(chosen,correct,btn,isText=false,isTimeout=false){
   const norm=s=>String(s).trim().replace(/\s+/g,'');
   const ok=!isTimeout&&norm(chosen).toLowerCase()===norm(correct).toLowerCase();
   const curQdata = questions[curQ] || {};
+  curQdata._wasCorrect = ok;
+  // 적응형 난이도 (생성형 과목만)
+  if(!isRetryMode && (curSubject==='math'||curSubject==='money')){
+    adaptStreak = ok ? Math.max(1, adaptStreak+1) : Math.min(-1, adaptStreak-1);
+    const remaining = questions.length - curQ - 1;
+    if(adaptStreak>=3 && adaptLevel<4 && remaining>=2){
+      adaptLevel++; adaptStreak=0; adaptNote='⬆️ 조금 더 어려운 문제!';
+      const fresh=genQuestions(curSubject,adaptLevel).slice(0,remaining);
+      questions=questions.slice(0,curQ+1).concat(fresh);
+    } else if(adaptStreak<=-3 && adaptLevel>1 && remaining>=2){
+      adaptLevel--; adaptStreak=0; adaptNote='⬇️ 조금 쉬운 문제로 바꿨어요!';
+      const fresh=genQuestions(curSubject,adaptLevel).slice(0,remaining);
+      questions=questions.slice(0,curQ+1).concat(fresh);
+    }
+  }
   if(ok){
     score++;stats[curSubject].c++;
     if(btn&&!isText)btn.classList.add('c');
     const ki=document.getElementById('kInp');if(ki)ki.style.borderColor='#6BCB77';
-    playCorrect();if(timeLeft>10)bonusStars++;
+    playCorrect();if(timeLeft>15)bonusStars++;
     // 정답 설명 표시
     if(curQdata.explain){
       setTimeout(()=>{
@@ -1615,20 +1783,56 @@ function showResult(){
   stopTimer();const total=questions.length;const pct=Math.round(score/total*100);
   const stars=score>=total?3:score>=Math.ceil(total*.6)?2:score>=1?1:0;
   const earnedNow=stars+bonusStars;totalStars+=earnedNow;
+
+  // 오답 재시험 모드: 맞힌 문제는 오답노트에서 제거
+  if(isRetryMode){
+    const correctQuestions=questions.filter(q=>q._wasCorrect).map(q=>String(q.answer));
+    // 이번에 맞힌 답들을 오답노트에서 제거
+    wrongNotes=wrongNotes.filter(n=>!correctQuestions.includes(String(n.correct)) || (n.subject!==curSubject && !questions.some(q=>q._origSubject===n.subject)));
+    try{localStorage.setItem('wn',JSON.stringify(wrongNotes));}catch(e){}
+    isRetryMode=false;
+  }
+
   updateMissionProgress(curSubject,score);markStudiedToday();
   if(pct>=90&&curLevel<3){curLevel++;stats[curSubject].level=curLevel;}
   else if(pct<40&&curLevel>1){curLevel--;stats[curSubject].level=curLevel;}
-  const entry={subject:curSubject,level:curLevel,score,total,stars,date:new Date().toLocaleString('ko-KR'),dayKey:new Date().toISOString().slice(0,10),duration:getStudyDuration()};
+
+  // 최고 기록 갱신 체크
+  let bestKey='best_'+curSubject;
+  let prevBest=0;
+  try{prevBest=parseInt(localStorage.getItem(bestKey)||'0');}catch(e){}
+  let isNewBest=false;
+  if(pct>prevBest){ isNewBest=true; try{localStorage.setItem(bestKey,pct);}catch(e){} }
+
+  const entry={subject:curSubject,level:curLevel,score,total,stars,date:new Date().toLocaleString('ko-KR'),dayKey:localDateKey(),duration:getStudyDuration()};
   hist.unshift(entry);if(hist.length>30)hist=hist.slice(0,30);
+
+  // 일일 목표 달성 체크 (오늘 미션 전부 완료 시 보너스)
+  let dailyGoalReward=0;
+  const allMissionsDone = MISSIONS.every(m=>(missionProgress[m.id]||0)>=m.target);
+  const todayRewardKey='dgr_'+todayKey;
+  let alreadyRewarded=false;
+  try{alreadyRewarded=localStorage.getItem(todayRewardKey)==='1';}catch(e){}
+  if(allMissionsDone && !alreadyRewarded){
+    dailyGoalReward=10;
+    totalStars+=dailyGoalReward;
+    try{localStorage.setItem(todayRewardKey,'1');}catch(e){}
+    // 특별 레어 스티커
+    const rareSticker='👑';
+    if(stickers.length<20)stickers.push(rareSticker);
+  }
+
   checkBadges(score,total,pct);save();
   pbSaveSession(entry);
   // 텔레그램 알림
   const starEmoji='⭐'.repeat(stars)+'☆'.repeat(3-stars);
-  const tgMsg='🌟 '+NAMES[curSubject]+' 공부 완료!\n\n'+
+  let tgMsg='🌟 '+NAMES[curSubject]+' 공부 완료!\n\n'+
     '📊 점수: '+score+'/'+total+'문제 ('+pct+'%)\n'+
     '⭐ 별: '+starEmoji+'\n'+
     '🔥 연속 학습: '+streak+'일\n'+
     '⏱️ 학습시간: '+Math.floor(getStudyDuration()/60)+'분 '+(getStudyDuration()%60)+'초';
+  if(isNewBest && prevBest>0) tgMsg+='\n\n🎉 최고 기록 갱신! ('+prevBest+'% → '+pct+'%)';
+  if(dailyGoalReward>0) tgMsg+='\n\n🏆 오늘 미션 전부 완료! 보너스 +10⭐';
   sendTelegram(tgMsg);
   const es=['😢','😊','😄','🎉'];const ms=['괜찮아요! 다시 해봐요 💪','잘 했어요! 조금 더!','훌륭해요!','완벽해요! 최고예요! 🏆'];
   document.getElementById('rEmoji').textContent=es[stars];document.getElementById('rMsg').textContent=ms[stars];
@@ -1637,8 +1841,12 @@ function showResult(){
   document.getElementById('rBonus').textContent=bonus+'(총 +'+earnedNow+'⭐)';
   document.getElementById('rDetail').textContent='맞힌 문제: '+score+'개 / 틀린 문제: '+(total-score)+'개 ('+pct+'%)';
   const gbox=document.getElementById('gachaBox');
-  if(stars>=2){const sticker=STICKER_POOL[Math.floor(Math.random()*STICKER_POOL.length)];if(stickers.length<20)stickers.push(sticker);gbox.style.display='';gbox.innerHTML='<div style="font-size:.82rem;font-weight:700;color:#856404;margin-bottom:8px;">🎁 뽑기 보상!</div><div class="gacha-emoji">'+sticker+'</div><div class="gacha-name">새 스티커 획득! 🎉</div>';}
-  else gbox.style.display='none';
+  let gachaHtml='';
+  if(stars>=2){const sticker=STICKER_POOL[Math.floor(Math.random()*STICKER_POOL.length)];if(stickers.length<20)stickers.push(sticker);gachaHtml='<div style="font-size:.82rem;font-weight:700;color:#856404;margin-bottom:8px;">🎁 뽑기 보상!</div><div class="gacha-emoji">'+sticker+'</div><div class="gacha-name">새 스티커 획득! 🎉</div>';}
+  // 최고기록 / 일일목표 배너
+  if(isNewBest && prevBest>0) gachaHtml='<div style="font-size:1rem;font-weight:900;color:#C77DFF;margin-bottom:8px;">🎉 최고 기록 갱신!</div><div style="font-size:.85rem;color:#888;">'+prevBest+'% → '+pct+'%</div>'+gachaHtml;
+  if(dailyGoalReward>0) gachaHtml='<div style="font-size:1rem;font-weight:900;color:#FFD93D;margin-bottom:6px;">🏆 오늘 미션 전부 완료!</div><div style="font-size:.85rem;color:#888;margin-bottom:8px;">보너스 +10⭐ + 레어 스티커 👑</div>'+gachaHtml;
+  if(gachaHtml){gbox.style.display='';gbox.innerHTML=gachaHtml;}else gbox.style.display='none';
   // 학습시간 기록
   const dur = getStudyDuration();
   const durMin = Math.floor(dur/60);
@@ -1648,8 +1856,8 @@ function showResult(){
   // 오답 노트 버튼
   const wBtn = document.getElementById('wrongNoteBtn');
   const wrongThisSession = wrongNotes.filter(n=>n.subject===curSubject).length;
-  if(wBtn) { wBtn.style.display = wrongThisSession>0?'':'none'; wBtn.textContent='📝 오답 노트 ('+Math.min(wrongThisSession,total-score)+'개)'; }
-  showScreen('resultScreen');if(stars>=2)confetti();if(stars===3)playLevelup();
+  if(wBtn) { wBtn.style.display = wrongThisSession>0?'':'none'; wBtn.textContent='📝 오답 노트 ('+wrongThisSession+'개)'; }
+  showScreen('resultScreen');if(stars>=2||dailyGoalReward>0)confetti();if(stars===3||dailyGoalReward>0)playLevelup();
 }
 
 // BADGES
@@ -1678,6 +1886,53 @@ function renderBadges(){
   for(let i=0;i<20;i++){const el=document.createElement('div');if(stickers[i]){el.className='sticker-slot';el.textContent=stickers[i];}else{el.className='sticker-slot empty';el.textContent='?';}sg.appendChild(el);}
 }
 
+// PARENT - PIN 잠금
+function openParent(){
+  let pin=null;
+  try{pin=localStorage.getItem('parent_pin');}catch(e){}
+  if(!pin){
+    // PIN 미설정 → 바로 입장 (대시보드에서 설정 가능)
+    showScreen('parentScreen');
+    return;
+  }
+  // PIN 입력 받기
+  showPinPrompt(pin);
+}
+function showPinPrompt(correctPin){
+  const ov=document.createElement('div');ov.className='overlay';
+  const box=document.createElement('div');box.className='badge-popup';box.style.maxWidth='300px';
+  box.innerHTML='<div style="font-size:2.5rem;margin-bottom:8px;">🔒</div>'+
+    '<div style="font-size:1.1rem;font-weight:900;margin-bottom:12px;">부모님 비밀번호</div>'+
+    '<input type="password" inputmode="numeric" id="pinInput" maxlength="4" placeholder="****" style="width:120px;text-align:center;font-size:1.5rem;letter-spacing:8px;padding:10px;border:3px solid #C77DFF;border-radius:12px;outline:none;margin-bottom:12px;"/>'+
+    '<div id="pinErr" style="font-size:.8rem;color:#FF6B6B;min-height:18px;margin-bottom:8px;"></div>'+
+    '<div style="display:flex;gap:8px;"><button class="btn btn-sm btn-w" id="pinCancel" style="flex:1;">취소</button><button class="btn btn-sm btn-p" id="pinOk" style="flex:1;">확인</button></div>';
+  document.body.appendChild(ov);document.body.appendChild(box);
+  const inp=document.getElementById('pinInput');inp.focus();
+  const close=()=>{ov.remove();box.remove();};
+  document.getElementById('pinCancel').onclick=close;
+  ov.onclick=close;
+  const check=()=>{
+    if(inp.value===correctPin){close();showScreen('parentScreen');}
+    else{document.getElementById('pinErr').textContent='비밀번호가 틀려요';inp.value='';inp.focus();}
+  };
+  document.getElementById('pinOk').onclick=check;
+  inp.onkeydown=(e)=>{if(e.key==='Enter')check();};
+}
+
+// 나스에서 전체 세션 불러와서 합산
+let cloudSessions = null;
+async function pbLoadAllSessions(){
+  if(!pbOnline || !pbToken) return null;
+  try{
+    const res=await fetch(PB_URL + '/api/collections/sessions/records?perPage=500&sort=-created',{
+      headers:{'Authorization':pbToken}
+    });
+    if(!res.ok) return null;
+    const data=await res.json();
+    return data.items||[];
+  }catch(e){ return null; }
+}
+
 // PARENT
 function renderParent(){
   let tq=0,tc=0;Object.values(stats).forEach(s=>{tq+=s.t;tc+=s.c;});
@@ -1703,19 +1958,33 @@ function renderParent(){
   else {hl.innerHTML=hist.slice(0,12).map(h=>{const pct=Math.round(h.score/h.total*100);const cls=pct>=80?'sg':pct>=50?'so':'sp';return'<div class="hitem"><div style="font-size:1.5rem;">'+ICONS[h.subject]+'</div><div style="flex:1"><div style="font-weight:900;font-size:.86rem;">'+NAMES[h.subject]+' · Lv'+(h.level||1)+' · ⭐'+h.stars+'</div><div style="font-size:.7rem;color:#aaa;">'+h.date+'</div></div><div class="hscore '+cls+'">'+h.score+'/'+h.total+'<br><span style="font-size:.65rem;">'+pct+'%</span></div></div>';}).join('');}
   renderWeekGraph();
   const pbs=document.getElementById('pbStatus');
-  if(pbs) pbs.innerHTML = pbOnline ? '✅ 나스 서버에 연결됨 — 학습 기록이 자동 저장돼요!' : '📴 오프라인 — 이 기기에만 저장돼요 (나스 연결 시 자동 동기화)';
+  let pend=0; try{pend=JSON.parse(localStorage.getItem('pb_pending')||'[]').length;}catch(e){}
+  if(pbs) pbs.innerHTML = (pbOnline ? '✅ 나스 서버에 연결됨 — 학습 기록이 자동 저장돼요!' : '📴 오프라인 — 이 기기에만 저장돼요 (나스 연결 시 자동 동기화)') + (pend>0?'<br><span style="color:#FF9F43">⏳ 전송 대기 중인 기록 '+pend+'개</span>':'');
+  // 나스에서 전체 세션 불러와서 그래프 갱신 (모든 기기 합산)
+  if(pbOnline){
+    pbLoadAllSessions().then(sessions=>{
+      if(sessions){ cloudSessions=sessions; renderWeekGraph(); }
+    });
+  }
 }
 
 // 주간 학습량 그래프
 function renderWeekGraph(){
   const wg=document.getElementById('pWeekGraph');
   if(!wg)return;
+  // 나스 세션 데이터가 있으면 그걸로, 없으면 로컬 hist로
+  const useCloud = cloudSessions && cloudSessions.length>0;
   const days=[];
   for(let i=6;i>=0;i--){
     const d=new Date(Date.now()-i*864e5);
-    const key=d.toISOString().slice(0,10);
+    const key=localDateKey(d);
     const label=['일','월','화','수','목','금','토'][d.getDay()];
-    const count=hist.filter(h=>h.dayKey===key).reduce((a,h)=>a+h.total,0);
+    let count;
+    if(useCloud){
+      count=cloudSessions.filter(s=>(s.created||'').slice(0,10)===key).reduce((a,s)=>a+(s.total||0),0);
+    } else {
+      count=hist.filter(h=>h.dayKey===key).reduce((a,h)=>a+h.total,0);
+    }
     days.push({label,count,isToday:i===0});
   }
   const maxCount=Math.max(...days.map(d=>d.count),1);
@@ -1728,8 +1997,23 @@ function renderWeekGraph(){
       '<div style="width:100%;height:'+h+'%;background:'+col+';border-radius:6px 6px 0 0;transition:height .5s;min-height:4px;"></div>'+
       '<div style="font-size:.72rem;font-weight:700;color:'+(d.isToday?'#C77DFF':'#aaa')+';">'+d.label+'</div></div>';
   });
-  html+='</div><div style="text-align:center;font-size:.75rem;color:#aaa;margin-top:8px;">최근 7일간 푼 문제 수</div></div>';
+  html+='</div><div style="text-align:center;font-size:.75rem;color:#aaa;margin-top:8px;">최근 7일간 푼 문제 수'+(useCloud?' (모든 기기 합산 ☁️)':'')+'</div></div>';
   wg.innerHTML=html;
+}
+
+// 부모 화면 PIN 저장
+function savePin(){
+  const pin=document.getElementById('pinSet').value.trim();
+  const log=document.getElementById('pinLog');
+  if(pin===''){
+    try{localStorage.removeItem('parent_pin');}catch(e){}
+    log.innerHTML='🔓 비밀번호가 해제됐어요.';
+    return;
+  }
+  if(!/^\d{4}$/.test(pin)){log.textContent='⚠️ 숫자 4자리로 입력해주세요.';return;}
+  try{localStorage.setItem('parent_pin',pin);}catch(e){}
+  document.getElementById('pinSet').value='';
+  log.innerHTML='🔒 비밀번호가 설정됐어요! 다음부터 입력해야 들어와요.';
 }
 
 // 데이터 백업
@@ -1746,7 +2030,7 @@ function backupData(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
-  a.download='반짝반짝공부방_백업_'+new Date().toISOString().slice(0,10)+'.json';
+  a.download='반짝반짝공부방_백업_'+localDateKey()+'.json';
   a.click();
   URL.revokeObjectURL(url);
   const log=document.getElementById('backupLog');
@@ -1837,8 +2121,10 @@ try{const tt=localStorage.getItem('tg_token'),tc=localStorage.getItem('tg_chat')
 //  PocketBase 연동
 // ══════════════════════════════════════════
 const PB_URL = 'https://shoonyhan.mooo.com';
+// 앱 전용 계정. 클라이언트 코드라 완전한 비밀은 불가능하므로
+// PocketBase API Rule을 이 계정 ID로 고정해 피해 범위를 제한함 (아래 안내 참고)
 const PB_EMAIL = 'app@shoonyhan.com';
-const PB_PASSWORD = 'shoonyhan2026';
+const PB_PASSWORD = atob('c2hvb255aGFuMjAyNg==');
 let pbToken = null;
 let pbOnline = false;
 
@@ -1859,6 +2145,8 @@ async function pbLogin(){
     await pbLoadSettings();
     // 진행도 불러오기 (모든 기기 동기화)
     await cloudLoadProgress();
+    // 오프라인 중 밀린 세션 전송
+    flushPending();
   }catch(e){
     pbOnline = false;
     console.log('PocketBase 오프라인 (로컬 저장만 사용)');
@@ -1974,27 +2262,77 @@ async function cloudLoadProgress(){
 }
 
 // 학습 세션 저장
-async function pbSaveSession(entry){
-  if(!pbOnline || !pbToken) return;
-  try{
-    await fetch(PB_URL + '/api/collections/sessions/records', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':pbToken},
-      body:JSON.stringify({
-        subject: entry.subject,
-        level: entry.level,
-        score: entry.score,
-        total: entry.total,
-        stars: entry.stars,
-        pct: Math.round(entry.score/entry.total*100),
-        duration: entry.duration || 0
-      })
-    });
-  }catch(e){ console.log('세션 저장 실패', e); }
+function sessionPayload(entry){
+  return {
+    subject: entry.subject, level: entry.level, score: entry.score, total: entry.total,
+    stars: entry.stars, pct: Math.round(entry.score/entry.total*100), duration: entry.duration || 0
+  };
 }
+function queuePending(entry){
+  let q=[]; try{q=JSON.parse(localStorage.getItem('pb_pending')||'[]');}catch(e){}
+  q.push(sessionPayload(entry)); if(q.length>200)q=q.slice(-200);
+  try{localStorage.setItem('pb_pending',JSON.stringify(q));}catch(e){}
+}
+async function postSession(payload){
+  const res=await fetch(PB_URL + '/api/collections/sessions/records', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':pbToken},
+    body:JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function pbSaveSession(entry){
+  if(!pbOnline || !pbToken){ queuePending(entry); return; }
+  try{ await postSession(sessionPayload(entry)); }
+  catch(e){ console.log('세션 저장 실패 → 큐에 보관', e); queuePending(entry); }
+}
+// 연결되면 밀린 세션 전송
+async function flushPending(){
+  if(!pbOnline || !pbToken) return;
+  let q=[]; try{q=JSON.parse(localStorage.getItem('pb_pending')||'[]');}catch(e){}
+  if(!q.length) return;
+  const remain=[];
+  for(const payload of q){ try{ await postSession(payload); }catch(e){ remain.push(payload); } }
+  try{localStorage.setItem('pb_pending',JSON.stringify(remain));}catch(e){}
+  if(q.length-remain.length>0) console.log('밀린 세션 '+(q.length-remain.length)+'개 전송 완료');
+}
+// 온라인 복귀 시 재시도
+window.addEventListener('online', ()=>{ if(!pbOnline) pbLogin(); else flushPending(); });
 
 // 앱 시작 시 로그인 시도
 pbLogin();
+
+// 주간 리포트 자동 발송 (일요일 1회)
+function checkWeeklyReport(){
+  const now=new Date();
+  if(now.getDay()!==0) return; // 일요일만
+  const weekKey='wr_'+localDateKey(now);
+  let sent=false;
+  try{sent=localStorage.getItem(weekKey)==='1';}catch(e){}
+  if(sent) return;
+  // 최근 7일 통계 집계
+  let totalQ=0,totalC=0,subjectCount={},studyDays=new Set();
+  for(let i=0;i<7;i++){
+    const d=localDateKey(new Date(Date.now()-i*864e5));
+    hist.filter(h=>h.dayKey===d).forEach(h=>{
+      totalQ+=h.total;totalC+=h.score;studyDays.add(d);
+      subjectCount[h.subject]=(subjectCount[h.subject]||0)+h.total;
+    });
+  }
+  if(totalQ===0) return; // 학습 없으면 발송 안함
+  const topSubject=Object.keys(subjectCount).sort((a,b)=>subjectCount[b]-subjectCount[a])[0];
+  const avgPct=Math.round(totalC/totalQ*100);
+  const msg='📊 이번 주 학습 리포트\n\n'+
+    '📅 공부한 날: '+studyDays.size+'일\n'+
+    '✏️ 푼 문제: '+totalQ+'개\n'+
+    '🎯 평균 정답률: '+avgPct+'%\n'+
+    '⭐ 누적 별: '+totalStars+'개\n'+
+    '🔥 연속 학습: '+streak+'일\n'+
+    (topSubject?'💪 가장 많이 한 과목: '+NAMES[topSubject]:'')+
+    '\n\n이번 주도 수고했어요! 👏';
+  sendTelegram(msg);
+  try{localStorage.setItem(weekKey,'1');}catch(e){}
+}
+setTimeout(checkWeeklyReport, 3000);
 
 // ══════════════════════════════════════════
 //  PWA - Service Worker 등록
